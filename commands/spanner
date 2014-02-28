@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+#
+# Copyrigth SAS Institute, Inc
+#
+
+import sys
+
+from pkg_resources import require
+require('bob')
+
+if __name__ == '__main__':
+    from spanner import main
+    sys.exit(main.main(sys.argv))
+
+

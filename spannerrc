@@ -1,0 +1,24 @@
+# These may be overridden by /etc/gitterrc or ~/.gitterrc using the 'override' directive
+
+configPath  ./common.conf
+scmType     git
+scmUri      http://gitgrid.unx.sas.com
+scmPlans    %(scmUri)s/utilities.ci.bobplans.git
+bobExec     /usr/bin/bob-4.0
+tmpDir      tmp
+logging     True
+logFile     spanner.log
+lockFile    lock-spanner
+buildAll    False
+
+gitTarget   git-repo
+
+targetLabel foo.bar@foo:foo-bar-1
+
+
+macros gitrepo %(scmUri)s
+macros target_host newton.eng.rpath.com
+macros scc http://scc.unx.sas.com
+
+[plans:bobplans]
+scm %(scmPlans)s

@@ -1,0 +1,34 @@
+#
+# Copyright (c) SAS Institute Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
+VERSION=0.1.0
+# VERSION can be overridden by snapshot builds to force incompatible versions
+
+export prefix = /usr
+export lib ?= $(shell arch | sed -r '/x86_64|ppc64|s390x|sparc64/{s/.*/lib64/;q};s/.*/lib/')
+export bindir = $(prefix)/bin
+export sbindir = $(prefix)/sbin
+export libdir = $(prefix)/$(lib)
+export libexecdir = $(prefix)/libexec
+export datadir = $(prefix)/share
+export mandir = $(datadir)/man
+export sitedir = $(libdir)/python$(PYVERSION)/site-packages
+export spannerdir = $(sitedir)/sas_spanner
+export initdir = /etc/init.d
+export sysconfdir = /etc/sysconfig
+
+export VERSION

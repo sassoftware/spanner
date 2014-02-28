@@ -1,0 +1,77 @@
+Sas Spanner
+
+Used to pass git repos to bob for building conary packages.
+
+Master bob plan git repo required
+
+Target git repos must include a conary recipe
+
+configure with common.conf (conary style config)
+
+Spanner uses a specific folder layout by default to determine what packages to build and include in the group as well as information needed to build the packages.
+
+Current layout of a git repo for spanner to use. Spanner ignores other directories by employing a SEP field. 
+
+./common
+./conf
+./external
+./packages
+
+
+
+./common -- this contains common.conf and a group.conf 
+
+common.conf is used for setting master targetLabel and other persistent variables used in the packages and group.conf
+
+targetLabel vapp-ci-temp.cny.sas.com@sas:sasinside-spanner-test
+
+macros sourceControlHost gitgrid.unx.sas.com
+macros sourceControlBranch 0.1.0
+macros sourceControlFolder Infrastructure
+macros sourceControlPath cgit/VirtualApplications/%(sourceControlFolder)s
+macros sourceControlURL http://%(sourceControlHost)s/%(sourceControlPath)s
+
+
+
+group.conf is used to specify the targetLabel for the group as well as the group name and a boolean for including packages in the external directory in the group
+
+targetLabel vapp-ci-temp.cny.sas.com@sas:sasinside-spanner-test
+macros groupName group-dont-panic
+macros includeExternal True
+
+
+ 
+./conf contains the base platform configuration conf files. these are usually prefixed with platform-
+
+platform-centos-6n.conf
+
+# CentOS 6n - Encapsulated with system Python
+
+resolveTrovesOnly True
+resolveTroves group-rpath-packages=%(common_label)s
+resolveTroves group-os=%(distro_label)s
+
+ephemeral True
+defaultBuildReqs git:rpm
+
+macros common_label     centos6.rpath.com@rpath:centos-6-common
+macros distro_label     centos6.rpath.com@rpath:centos-6e
+macros platform_prefix  centos-6n
+
+macros contrib_label    contrib.rpath.org@rpath:centos-6e
+macros contrib_py_label contrib.rpath.org@rpath:centos-6n
+macros testbits_label   testbits.rb.rpath.com@rpath:centos-6n
+macros testutils_label  %(target_host)s@rpath:centos-6n-testutils
+macros webunit_label    %(contrib_label)s
+
+autoLoadRecipes group-superclasses=%(common_label)s[is:x86_64]
+installLabelpath %(common_label)s %(testbits_label)s
+rpmRequirements trove: rpm-rhel-6:lib(RPM-RHEL-6)
+
+
+./external contains bob plans for packages that are built outside of spanner but can be included in the group. 
+
+
+./packages contains bob plans for all packages to be built using spanner and included in the group
+
+./plan-template.bob is the main template file for all the packages bob plans 
