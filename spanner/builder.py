@@ -412,7 +412,18 @@ class Builder(git.GitRepository):
             tobuild = self.handler(packages)
             built_packages = []
             failed_packages = []
+            seen_plans = []
+            skipped = []
             for pkg in tobuild:
+                # lets not build pkgs more than once
+                if pkg.bobplan not in seen_plans:
+                    seen_plans.append(pkg.bobplan)
+                else:
+                    skipped.append(pkg.name)
+                    pkg.log = 'Built in %s' % pkg.bobplan
+                    packages.setdefault(pkg.name, set()).add(pkg)
+                    continue
+
                 rc, cmd = self._build(pkg.bobplan)
                 pkg.log = ('Failed: %s' if rc else 'Success: %s') % cmd
                 packages.setdefault(pkg.name, set()).add(pkg)
@@ -425,6 +436,9 @@ class Builder(git.GitRepository):
                 for name, pkgs in packages.items():
                     for pkg in pkgs:
                         logger.info('%s  :  %s\n' % (pkg.name, pkg.log))
+                logger.info('List of plans built: %s' % seen_plans)
+                logger.info('List of skipped packages: %s' % skipped)
+
             logger.info('List of packages built: %s' %
                         [pkg.name for pkg in built_packages])
 
@@ -452,11 +466,10 @@ class Builder(git.GitRepository):
 
         macros = group_plan.getMacros()
 
-        # TODO Extra packages must come from the config file not the external directory
-
-        external_packages = None
         if macros.get('includeExternal') or external:
-            external_packages = group_plan.getExternalPackages()
+            external_plans = self.plans['external']
+            if external_plans:
+                external_packages = self.gather_packages(external_plans)
         
         groupName = macros.get('groupName', 'group-foobar')
 
@@ -469,14 +482,15 @@ class Builder(git.GitRepository):
 
         for name, pkgs in packages.items():
             for pkg in pkgs:
-                pkgspec = '%s' % (pkg.name)
                 if pkg.version:
-                    pkgspec = '%s=%s' % (pkg.name, str(pkg.version))
-                pkgsList.append(pkgspec)
+                    pkgsList.append('%s=%s' % (pkg.name, str(pkg.version)))
+                else:
+                    pkgsList.append('%s' % (pkg.name))
 
         if external_packages:
-            for pkgspec in external_packages:
-                pkgsList.append(pkgspec)
+            for name, pkgs in external_packages.items():
+                for pkg in pkgs:
+                    pkgsList.append('%s=%s' % (pkg.name, str(pkg.version)))
 
         logger.debug('Building group for %s' % groupName)
         if self.test:
