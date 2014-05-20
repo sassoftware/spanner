@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Package(object):
-    __slots__ = ['name', 'target', 'label', 'repositories', 'scm',
+    __slots__ = ['name', 'target', 'label', 'repositories', 'controllers',
                  'buildLabel', 'targetLabel', 'sourceLabel',
                  'commit', 'branch', 'tag', 'allversions', 'latest',
                  'version', 'flavor', 'revision', 'uri', 'change',

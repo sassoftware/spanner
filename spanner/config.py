@@ -136,7 +136,9 @@ class SpannerConfiguration(MainConfig):
     tmpDir                      = (cfg.CfgString, 'tmp')
     bobExec                     = (cfg.CfgString, '/usr/bin/bob')
     bobPlansUri                 = cfg.CfgString
-    packagesDir                 = (cfg.CfgString, 'packages')
+    wmsBase                     = (cfg.CfgString, 'http://wheresmystuff.unx.sas.com')
+    packagesDir                 = (cfg.CfgString, 'projects')
+    productDir                  = (cfg.CfgString, 'products')
     externalDir                 = (cfg.CfgString, 'external')
     commonDir                   = (cfg.CfgString, 'common')
     commonFile                  = (cfg.CfgString, 'common.conf')
@@ -165,7 +167,7 @@ class SpannerConfiguration(MainConfig):
 
 class BobConfig(bobconfig.BobConfig):
 
-    def getTarget(self):
+    def getTargets(self):
         macros = self.getMacros()
         return [x % macros for x in self.target]
 
