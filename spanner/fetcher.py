@@ -1,11 +1,15 @@
 import logging
 import os
+import tempfile
+from conary.lib import util as conary_util
+
+from . import controller
 
 logger = logging.getLogger(__name__)
 
 class Fetcher(object):
 
-    def __init__(self, path, controller, cfg):
+    def __init__(self, uri, cfg, branch=None):
         '''
         B{Fetcher} Creates a snapshot of a control repo, 
                     checks out plans, returns path to plans
@@ -18,20 +22,61 @@ class Fetcher(object):
         @param controller: wms, git, or local 
         @type controller: controller object
         '''
-        self.path = path
-        self.controller = controller
+        self.uri = uri
         self.cfg = cfg
+        self.branch = branch
+        for localdir in [ self.cfg.planDir, self.cfg.cacheDir ]:
+            conary_util.mkdirChain(localdir)
+        self.path = tempfile.mkdtemp(dir=self.cfg.planDir)
+        self.subtree = self.cfg.plansSubDir
+        if self.is_local(uri):
+            self.subtree = None
+        self.controller = self.initialize_controller(uri, self.branch)
         self.fetched = False
 
+    def is_local(self, uri):
+        return uri.startswith('/') or uri.startswith('file:')
+
+    def normalize_path(self, uri):
+        if uri.startswith('./') or uri.startswith('../'):
+            return os.path.abspath(uri) 
+        return uri
+
+
+    def initialize_controller(self, uri, branch=None):
+        ctrltype = 'GIT'
+        uri = self.normalize_path(uri)
+        paths = [ x for x in uri.split('/') ]
+        base = '/'.join(paths[:3])
+        path = '/'.join(paths[3:])
+        if self.is_local(uri):
+            ctrltype = 'LOCAL'
+        if base == self.cfg.wmsBase:
+            path = path.replace('api/repos/', '')
+            ctrltype = 'WMS'
+        # Silly but if we do not specify branch at command line 
+        # then we assume it is already asssigned unless we can extract it 
+        # from the end of a git uri
+        if not branch:
+            # TODO Use cfg option for this?
+            branch = self.branch
+            if len(path.split('?')) == 2:
+                path, branch = path.split('?')
+        return controller.Controller.create(ctrltype,
+                                            base,
+                                            path,
+                                            branch,
+                                            )
 
     def _fetch(self):
         logger.info('Fetching...')
-        if not os.path.exists(self.path):
-            logger.debug('Making directory for plans at %s' % self.path)
-            os.makedirs(self.path)
+        # FIXME If we use a temp file no need to create the dir
+        #if not os.path.exists(self.path):
+        #    logger.debug('Making directory for plans at %s' % self.path)
+        #    os.makedirs(self.path)
         logger.info('Checking out sources from %s to %s' %
                     (self.uri, self.path))
-        self.controller.snapshot(self.path)
+        self.controller.snapshot(self.path, self.subtree)
 
     def fetch(self):
         '''

@@ -1,0 +1,6 @@
+scc/bob master 11089258e56c03080281d30684f0832620dcadfd
+scc/build-tools master 78eed1cae30790e65ee599b04f93f23e93b84641
+scc/forester master 0c395e4be55b9457322b982dd64e9e7a036c4f73
+scc/jbutler master ea768561f0c3630afa9c36f1cc7862d6cf25e241
+scc/spanner master c0b1a2cab171172765240e2a34513703f4b73084
+scc/yggdrasil master d7de88773f978437acc0a99c31959f9b23c870e8

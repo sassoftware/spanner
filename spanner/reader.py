@@ -20,33 +20,25 @@ class Reader(object):
         '''  
         self.path = path
         self.cfg = cfg
+        # Default data structure built from this list
+        self.subdirs = [ self.cfg.projectsDir, 
+                         self.cfg.productsDir,
+                         self.cfg.externalDir,
+                        ]
 
     def _get_plans(self):
         '''
         get the plans from the path and organize them into a structure
         '''
         logger.debug('Gathering plan files from %s' % self.path)
-        plans = defaultdict(dict,{ 
-                                'packages' : set(),
-                                'common'   : set(),
-                                'external' : set(),
-                            }
-                        )
+        plans = defaultdict(dict, dict([(x, set()) for x in self.subdirs]))
 
         for root, dirs, files in os.walk(self.path):
-            # don't add packages if self.plans is set
-            if os.path.basename(root) == self.cfg.packagesDir:
-                for fn in files:
-                    plans.setdefault('packages', set()).add(
-                        os.path.join(root, fn))
-            if os.path.basename(root) == self.cfg.commonDir:
-                for fn in files:
-                    plans.setdefault('common', set()).add(
-                        os.path.join(root, fn))
-            if os.path.basename(root) == self.cfg.externalDir:
-                for fn in files:
-                    plans.setdefault('external', set()).add(
-                        os.path.join(root, fn))
+            for subdir in plans: 
+                if os.path.basename(root) == subdir:
+                    for fn in files:
+                        plans.setdefault(subdir, set()).add(
+                                        os.path.join(root, fn))
         return plans
 
 

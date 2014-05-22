@@ -22,23 +22,23 @@ Helper functions for dealing with mercurial (hg) repositories.
 import logging
 import os
 import subprocess
+from .. import scm
 
 from mercurial import hg, ui
 from mercurial.node import short
 
-from forester import scm
 
 log = logging.getLogger(__name__)
 
 
 class HgRepository(scm.ScmRepository):
 
-    def __init__(self, cacheDir, uri):
+    def __init__(self, uri, branch, cache='_cache'):
         self.uri = uri
-
+        self.branch = branch
         dirPath = self.uri.split('//', 1)[-1]
         dirPath = dirPath.replace('/', '_')
-        self.repoDir = os.path.join(cacheDir, dirPath, 'hg')
+        self.repoDir = os.path.join(cache, dirPath, 'hg')
 
     def isLocal(self):
         return self.uri.startswith('/') or self.uri.startswith('file:')
@@ -59,7 +59,7 @@ class HgRepository(scm.ScmRepository):
             subprocess.check_call(['hg', 'init'], cwd=self.repoDir)
         subprocess.check_call(['hg', 'pull', '-qf', self.uri], cwd=self.repoDir)
 
-    def checkout(self, workDir, subtree):
+    def snapshot(self, workDir, subtree):
         subprocess.check_call(['hg', 'archive', '--type=files',
             '--rev', self.revision, '--include', subtree,
             workDir], cwd=self.repoDir)

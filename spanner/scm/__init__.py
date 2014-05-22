@@ -19,6 +19,20 @@ import tempfile
 from conary.lib import util
 
 
+class ScmError(Exception):
+    msg = "Source Control Management Error: %s"
+    def __init__(self, *args):
+        self.args = [ x for x in args ]
+
+    def __str__(self):
+        return self.msg % ("\nReturn code: {retcode}; " 
+                            "stderr: {stderr}\n "
+                            "\t{extra}\n").format(
+                                        retcode=self.args[0],   
+                                        stderr=self.args[1],
+                                        extra=str(self.args[2:])
+                            )
+
 class ScmRepository(object):
 
     revision = None
@@ -36,13 +50,17 @@ class ScmRepository(object):
         """Refresh the local cache for the repository"""
         raise NotImplementedError
 
+    def snapshot(self, subpath):
+        """Checkout a snapshot of a repo to a working dir"""
+        raise NotImplementedError
+
     def getRecipe(self, subpath):
         """Return a dictionary of file contents at the given subpath"""
         assert self.revision
         # Update the local repository cache.
         workDir = tempfile.mkdtemp()
         try:
-            prefix = self.checkout(workDir, subpath) or ''
+            prefix = self.snapshot(workDir, subpath) or ''
             # Read in all the files for the requested subpath
             subDir = os.path.join(workDir, prefix, subpath)
             if not os.path.isdir(subDir):

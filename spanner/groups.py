@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from . import clientfactory
+from . import factory
 from . import templates
 from conary import changelog
 from conary.conaryclient import filetypes
@@ -37,7 +37,7 @@ class GroupBuilder(object):
         self._cclient = None
         self._cfg = None
 
-    conaryClientFactory = clientfactory.ConaryClientFactory
+    conaryClientFactory = factory.ConaryClientFactory
 
     def _getClient(self, force=False):
         if self._cclient is None or force:

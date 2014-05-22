@@ -137,13 +137,16 @@ class SpannerConfiguration(MainConfig):
     bobExec                     = (cfg.CfgString, '/usr/bin/bob')
     bobPlansUri                 = cfg.CfgString
     wmsBase                     = (cfg.CfgString, 'http://wheresmystuff.unx.sas.com')
-    packagesDir                 = (cfg.CfgString, 'projects')
-    productDir                  = (cfg.CfgString, 'products')
+    
+    plansSubDir                 = (cfg.CfgString, 'bob-plans')
+    projectsDir                 = (cfg.CfgString, 'projects')
+    productsDir                 = (cfg.CfgString, 'products')
     externalDir                 = (cfg.CfgString, 'external')
     commonDir                   = (cfg.CfgString, 'common')
     commonFile                  = (cfg.CfgString, 'common.conf')
     groupConfig                 = (cfg.CfgString, 'group.conf')
-    cacheDir                    = (cfg.CfgString, 'cachedir')
+    planDir                     = (cfg.CfgString, '_plan')
+    cacheDir                    = (cfg.CfgString, '_cache')
     gitTarget                   = (cfg.CfgString, 'git-repo')
 
     def __init__(self, config=None, readConfigFiles=False, ignoreErrors=False):

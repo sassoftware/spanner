@@ -13,21 +13,21 @@ from . import reader
 from . import checker
 from . import builder
 from . import grouper
-from . import controller
 
 logger = logging.getLogger(__name__)
 
 
 class Worker(object):
 
-    def __init__(self, uri, branch=None, cfg=None, test=False):
+    def __init__(self, uri, force=[], branch=None, cfgfile=None, test=False):
 
-        self.cfg = cfg
+        self.uri = uri
+        self.force = force
+        self.cfgfile = cfgfile
+        self.cfg = self.getDefaultConfig()
         self.test = test
-
-        if not self.cfg:
-            self.cfg = self.getcfg()
-         
+        self.branch = branch
+ 
         if self.cfg.testOnly:
             logger.warn('testOnly set in config file ignoring commandline')
             self.test = self.cfg.testOnly
@@ -37,59 +37,21 @@ class Worker(object):
             os.makedirs(self.tmpdir)
         assert os.path.exists(self.tmpdir)
 
-        self.controller = self.create_controller(uri, branch)
 
-
-        self.fetcher = fetcher.Fetcher(self.uri, self.controller, self.cfg)
-        self.reader = reader.Reader(self.cfg, self.controller, self.test)
-        self.checker = checker.Checker(self.cfg, self.controller, self.test)
-        self.builder = builder.Builder(self.cfg, self.controller, self.test)
-        self.grouper = grouper.Grouper(self.cfg, self.controller, self.test)
-
-    def getcfg(self):
+    def getDefaultConfig(self, cfgFile=None):
         logger.info('Loading default cfg')
-        cfg = config.SpannerConfiguration()
-        cfg.read()
-        return cfg
+        if not cfgFile:
+            cfgFile = self.cfgfile
+        return config.SpannerConfiguration(config=cfgFile)
 
-    def create_controller(self, uri, branch=None):
-        # Start with GIT
-        ctrltype = 'GIT'
-        paths = [ x for x in uri.split('/') if x ]
-        pre = paths[0]
-        if pre in [ 'http:', 'https:', 'ssh:', 'git:' ]:
-            base = '//'.join(paths[:2])
-            if base == self.cfg.wmsBase:
-                ctrltype = 'WMS'
-        else:
-            base = '/'.join(paths[:2])
-            ctrltype = 'LOCAL'
-        path = '/'.join(paths[2:])
-        # Silly but if we do not specify branch at command line 
-        # then we assume it is master unless we can extract it 
-        # from the end of a git uri
-        if not branch:
-            # TODO Use cfg option for this?
-            branch = 'master'
-            if len(path.split('?')) == 2:
-                path, branch = path.split('?')
-        self.base = base
-        self.branch = branch
-        self.cntrltype = ctrltype
-        return controller.Controller.create(self.cntrltype,
-                                                self.base,
-                                                self.path,
-                                                self.branch,
-                                                )
-
-
-    def fetch(self, uri):
+    def fetch(self):
         '''
         pass in location of the plans
         check out plans from repo
-        return location of plans
+        return destination of plans
         '''
-        return self.fetcher(uri)
+        fetch_plans = fetcher.Fetcher(self.uri, self.cfg, self.branch)
+        return fetch_plans.fetch()
         
 
     def read(self, path):
@@ -97,7 +59,8 @@ class Worker(object):
         pass in path to plans
         return set of package objects
         '''
-        return self.reader(path)
+        read_plans = reader.Reader(path, self.cfg)
+        return read_plans.read()
 
     def check(self, plans, force=[]):
         '''
@@ -108,7 +71,8 @@ class Worker(object):
         '''
         # checker returns set of packages updated with conary version
         # and the build flag set if changed
-        return self.checker(plans, force)
+        changes = checker.Checker(plans, force, self.branch, self.test)
+        return changes.check()
 
     def build(self, packageset):
         '''
@@ -118,7 +82,8 @@ class Worker(object):
         return updated set of package objects
         '''
         # builder returns set of packages updated with built flag set
-        return self.builder(packageset)
+        b = builder.Builder(packageset, self.cfg, self.test)
+        return b.build()
 
     def group(self, packageset):
         '''
@@ -128,7 +93,8 @@ class Worker(object):
         create a group with the specified versions of the packages
         cook group
         '''
-        return self.grouper(packageset)
+        g = grouper.Grouper(packageset, self.cfg, self.test)
+        return g.group()
 
     def display(self, packageset):
         '''
@@ -140,10 +106,12 @@ class Worker(object):
             print pkg.fail
             print pkg.group
 
-    def main(self, force=[]):
-        planpath = self.fetch(self.uri)
-        plans = self.read(planpath)
-        packageset = self.check(plans, force)
+    def main(self):
+        planpaths = self.fetch()
+        import epdb;epdb.st()
+        plans = self.read(planpaths)
+        packageset = self.check(plans, self.force)
+        import epdb;epdb.st()
         packageset = self.build(packageset)
         packageset = self.group(packageset)
         self.display(packageset)

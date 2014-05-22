@@ -11,11 +11,13 @@ logger = logging.getLogger(__name__)
 
 class Checker(object):
 
-    def __init__(self, plans, force=[], branch=None, test=False):
+    def __init__(self, plans, cfg, force=[], branch=None, test=False):
         self.plans = plans
         self.test = test
+        self.cfg = cfg
         self.force_build = force
         self.branch = branch
+        self.control_dirs = [ self.cfg.projectsDir, self.cfg.externalDir ]
 
     def setForceBuild(self, targets):
         '''
@@ -60,7 +62,7 @@ class Checker(object):
             if ctrltype == 'WMS':
                 base = plan.wmsBase
                 path = '/'.join(paths)
-            if ctrltype == 'GIT':
+            if ctrltype in [ 'GIT', 'HG' ]:
                 base = '//'.join(paths[:2])
                 path = '/'.join(paths[2:])
                 if len(path.split('?')) == 2:
@@ -168,27 +170,31 @@ class Checker(object):
 
         return {'change': change}
 
+
+    def _check_plans_in_dir(self, path):
+        packages = {}
+        for pkg in self._initial_packages(path):
+            pkg.update(self._get_conary_version(pkg))
+            pkg.update(self._detect_change(pkg))
+            pkg.update(self._get_repos(pkg))
+            if pkg.target and pkg.repositories:
+                packages.setdefault(pkg.target, set()).add(pkg)
+        return packages
+
     def _get_packages(self, plans):
-
-        logger.info('Gathering info from git repos located at '
-                    'URI : %s Branch : %s ' % (self.uri, self.branch))
-
-        data = defaultdict()
-
-        for path in plans:
-            for pkg in self._initial_packages(path):
-                pkg.update(self._get_conary_version(pkg))
-                pkg.update(self._detect_change(pkg))
-                pkg.update(self._get_repos(pkg))
-                if pkg.target and pkg.repositories:
-                    data.setdefault(pkg.target, set()).add(pkg)
+        data = {}
+        import epdb;epdb.st()
+        for plan in plans:
+            for name in self.control_dirs:
+                for path in plan.get(name):
+                    pkgs = self._check_plans_in_dir(path)
+                    data.setdefault(name, pkgs)
         return data   
 
 
 
     def check(self):
-        pass
-
+        return self._get_packages(self.plans)
 
     def main(self):
         return self.check()

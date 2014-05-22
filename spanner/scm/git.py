@@ -13,9 +13,7 @@ Helper functions for dealing with git repositories.
 import logging
 import os
 import subprocess
-
 from .. import scm
-from ..errors import ForesterGitError
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +32,7 @@ class GitCommands(object):
         log.debug
         stdout, stderr = p.communicate()
         if p.returncode:
-            raise ForesterGitError(p.returncode, stdout, stderr)
+            raise scm.ScmError(p.returncode, stderr, stdout)
         return stdout
 
     def ls_remote(self, uri, branch=None):
@@ -55,7 +53,6 @@ class GitCommands(object):
     def remote_v(self, path):
         cmd = ['git', 'remote', '-v']
         return self.run_git(cmd, path)
-
 
     def tags(self, path, msg=None):
         '''
@@ -141,13 +138,12 @@ class GitCommands(object):
 
 class GitRepository(scm.ScmRepository):
 
-    def __init__(self, cacheDir, uri, branch):
+    def __init__(self, uri, branch, cache='_cache'):
         self.uri = uri
         self.branch = branch
-
         self.path = self.uri.split('//', 1)[-1]
         self.path = self.path.replace('/', '_')
-        self.repo_dir = os.path.join(cacheDir, self.path, 'git')
+        self.repo_dir = os.path.join(cache, self.path, 'git')
 
     def isLocal(self):
         return self.uri.startswith('/') or self.uri.startswith('file:')
@@ -159,9 +155,10 @@ class GitRepository(scm.ScmRepository):
             stdout=subprocess.PIPE,
             cwd=self.repo_dir,
             )
-        stdout, _ = p.communicate()
+        stdout, stderr = p.communicate()
         if p.returncode:
-            raise RuntimeError("git exited with status %s" % p.returncode)
+            msg = "git exited with status %s" % p.returncode
+            raise scm.ScmError(p.returncode, stderr, stdout, msg)
         rev = stdout.split()[0]
         assert len(rev) == 40
         return rev
@@ -182,12 +179,13 @@ class GitRepository(scm.ScmRepository):
             cwd=self.repo_dir,
             )
 
-    def snapshot(self, workDir):
+    def snapshot(self, workDir, subtree):
         p1 = subprocess.Popen(
-            ['git', 'archive', '--format=tar', self.branch],
-            stdout=subprocess.PIPE,
-            cwd=self.repo_dir,
+            ['git', 'archive', '--format=tar', self.revision, subtree], 
+            stdout=subprocess.PIPE, 
+            cwd=self.repoDir
             )
+
         p2 = subprocess.Popen(['tar', '-x'], stdin=p1.stdout, cwd=workDir)
         p1.stdout.close()  # remove ourselves from between git and tar
         p1.wait()
@@ -197,41 +195,15 @@ class GitRepository(scm.ScmRepository):
         if p2.returncode:
             raise RuntimeError("tar exited with status %s" % p1.returncode)
 
-    def run_git(self, cmd):
-        directory = None
-        if os.path.exists(self.repo_dir):
-            directory = self.repo_dir
-        p = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, cwd=directory)
-        stdout, _ = p.communicate()
-        if p.returncode:
-            raise RuntimeError("git exited with status %s" % p.returncode)
-        return stdout
+    def setRevision(self, rev):
+        super(GitRepository, self).setRevision(rev)
+        if 'branch' in rev:
+            self.branch = rev['branch']
+        if 'uri' in rev:
+            self.uri = rev['uri']
 
-    def ls_remote(self, uri, branch=None):
-        cmd = ['git', 'ls-remote', uri]
-        if branch:
-            cmd.append(branch)
-        stdout = self.run_git(cmd)
-        heads = {}
-        for head in stdout.splitlines():
-            sha, name = head.split('\t')
-            assert sha and name
-            heads[name] = sha
-        return heads
-
-    def ls_tree(self, branch):
-        cmd = ['git', 'ls-tree', '-r', '--name-only', branch]
-        stdout = self.run_git(cmd)
-        files = {}
-        files[branch] = [x for x in stdout.splitlines() if x]
-        return files
-
-    def show_file(self, path):
-        uri = '''%s:%s''' % (self.branch, path)
-        cmd = ['git', '--no-pager', 'show', uri]
-        return self.run_git(cmd)
 
     def getAction(self, extra=''):
         return 'addGitSnapshot(%r, branch=%r, tag=%r%s)' % (
-                self.uri, self.branch, self.revision, extra)
+                self.uri, self.branch, self.getShortRev(), extra)
+

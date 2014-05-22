@@ -5,14 +5,14 @@
 # All rights reserved.
 #
 
-import os
 import logging
-import urlparse
+import os 
 
 from spanner import repo
 from spanner.scm import wms
 from spanner.scm import git
 from spanner.scm import hg
+from spanner.scm import local
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +78,16 @@ class BaseController(object):
         '''
         pass
 
-    def snapshot(self, directory):
+    def snapshot(self, directory, subtree=None):
         '''
         Override depending on Controller Type
         Snapshot a repo into a directory
         Not a live repo
         '''
-        raise NotImplementedError
+        if not self.ctrl:
+            raise NotImplementedError
+        self.updatecache()
+        self.ctrl.snapshot(directory, subtree)
 
     def findrepos(self):
         '''
@@ -103,6 +106,7 @@ class WmsController(BaseController):
         self.branch = branch
         self.reposet = set()
         self.wms = wms.WmsRepository(self.base, self.path, self.branch)
+        self.ctrl = git.GitRepository(self._uri, self.branch)
 
     def _getUri(self):
         return self.wms.getGitUri()
@@ -112,9 +116,9 @@ class WmsController(BaseController):
     def reader(self):
         data = self.wms.parseRevisionsFromUri()
         for name, info in data.iteritems():
-            repo = repo.Repo(name=name)
-            repo.update(info)
-            self.reposet.add(repo)
+            r = repo.Repo(name=name)
+            r.update(info)
+            self.reposet.add(r)
         return self.reposet
 
 
@@ -129,18 +133,18 @@ class GitController(BaseController):
         self.path = path
         self.branch = branch
         self.repos = {}
-        self.uri = '/'.join(self.base, self.path)
-        self.git = git.GitRepository(self.uri, self.branch)
+        self._uri = '/'.join([self.base, self.path])
+        self.ctrl = git.GitRepository(self._uri, self.branch)
         self.gitcmds = git.GitCommands()
 
     def check(self):
-        heads = self.gitcmds.ls_remote(self.uri, self.branch)
+        heads = self.gitcmds.ls_remote(self._uri, self.branch)
         if heads:
             return True
         return False
     
     def compare_heads(self, test):
-        heads = self.gitcmds.ls_remote(self.uri, self.branch)
+        heads = self.gitcmds.ls_remote(self._uri, self.branch)
         for head, commit in heads.items():
             if commit == test:
                 return True
@@ -148,17 +152,14 @@ class GitController(BaseController):
 
     def latest(self):
         commits = []
-        heads = self.gitcmds.ls_remote(self.uri, self.branch)
+        heads = self.gitcmds.ls_remote(self._uri, self.branch)
         for head, commit in heads.items():
             commits.append(commit)
         return commits
 
     def updatecache(self):
-        self.git.updateCache()
+        self.ctrl.updateCache()
 
-    def snapshot(self, directory):
-        self.updatecache()
-        self.git.snapshot(directory)
 
 Controller.register(GitController)
 
@@ -171,7 +172,11 @@ class HgController(BaseController):
         self.path = path
         self.branch = branch
         self.repos = {}
+        self._uri = '/'.join([self.base, self.path])
+        self.ctrl = hg.HgRepository(self._uri, self.branch)
 
+    def updatecache(self):
+        self.ctrl.updateCache()
 
 Controller.register(HgController)
 
@@ -184,9 +189,16 @@ class LocalController(BaseController):
         self.path = path
         self.branch = branch
         self.repos = {} 
+        self._uri = os.path.join(self.base, self.path)
+        self.ctrl = local.LocalRepository(self._uri, self.branch)
 
+    def check(self):
+        return os.path.exists(self._uri)
 
-    def reader(self, path):
+    def read(self):
+        pass
+
+    def readControlYaml(self, path):
         #FILE IS IN YAML 
         # pick up file
         # parse
