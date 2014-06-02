@@ -62,7 +62,7 @@ class Worker(object):
         read_plans = reader.Reader(path, self.cfg)
         return read_plans.read()
 
-    def check(self, plans, force=[]):
+    def check(self, plans):
         '''
         pass in set of package objects
         check controller for versions
@@ -71,7 +71,8 @@ class Worker(object):
         '''
         # checker returns set of packages updated with conary version
         # and the build flag set if changed
-        changes = checker.Checker(plans, force, self.branch, self.test)
+        changes = checker.Checker(plans, self.cfg, 
+                            self.force, self.branch, self.test)
         return changes.check()
 
     def build(self, packageset):
@@ -110,10 +111,12 @@ class Worker(object):
         planpaths = self.fetch()
         import epdb;epdb.st()
         plans = self.read(planpaths)
-        packageset = self.check(plans, self.force)
+        packageset = self.check(plans)
         import epdb;epdb.st()
         packageset = self.build(packageset)
+        import epdb;epdb.st()
         packageset = self.group(packageset)
+        import epdb;epdb.st()
         self.display(packageset)
 
 

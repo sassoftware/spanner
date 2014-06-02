@@ -1,6 +1,10 @@
 import urllib
 import urllib2
 import requests
+import subprocess
+import os
+
+from conary.lib.util import copyfileobj
 
 from forester import scm
 
@@ -26,11 +30,25 @@ class WmsRepository(scm.ScmRepository):
         self.repos = None
         self.poll = None 
         silo, subpath = self.path.split('/', 1)
+        self.tar = subpath.replace('/','_') + '.tar'
         self.pathq = self._quote(silo) + '/' + self._quote(subpath)
         self.repos = self.base + '/api/repos/' + self.pathq
         self.locator = self.repos + '/' + 'show_url'
+        self.archive = self.repos + '/archive'
         if self.branch:
             self.poll = self.repos + '/poll/' + self._quote(self.branch)
+
+    @property
+    def repos(self):
+        silo, subpath = self.path.split('/', 1)
+        pathq = self._quote(silo) + '/' + self._quote(subpath)
+        return self.base + '/api/repos/' + pathq
+
+
+    @staticmethod
+    def _quote(foo):
+        return urllib.quote(foo).replace('/', ':')
+
 
     def fetchlines(self, uri):
         req = requests.get(uri)
@@ -53,6 +71,12 @@ class WmsRepository(scm.ScmRepository):
 
     def getTip(self):
         return self._getTip()[1]
+
+    def setFromTip(self):
+        branch, tip = self._getTip()
+        self.branch = branch
+        self.revision = tip
+        self.revIsExact = True
 
     def getGitUri(self):
         #FIXME might need to append .git
@@ -102,7 +126,60 @@ class WmsRepository(scm.ScmRepository):
         revisions = self.readRevisions(filename)
         return self.parseRevisions(revisions)
 
-    @staticmethod
-    def _quote(foo):
-        return urllib.quote(foo).replace('/', ':')
-        
+    def updateCache(self):
+        pass
+
+    def _archive(self, compress=''):
+        return urllib.quote(os.path.basename(self.path)
+                + '-' + self.getShortRev()
+                + '.tar' + compress)
+
+    def snaphsot(self, workDir, subtree=None):
+        '''
+        http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools/archive/78eed1cae30790e65ee599b04f93f23e93b84641/build-tools.tar
+        Need to parseRevisionLine and extract the head
+        then download the head and explode it into the workDir
+        '''
+        archive = self._archive()
+        data = urllib.urlencode([('subtree', subtree)]) if subtree else None
+        f = urllib2.urlopen(self.repos + '/archive/'
+                    + self.revision + '/' + archive, data=data)
+        tar = subprocess.Popen(['tar', '-x'], stdin=subprocess.PIPE,
+                cwd=workDir)
+        while True:
+            d = f.read(10000)
+            if not d:
+                break
+            tar.stdin.write(d)
+        tar.stdin.close()
+        tar.wait()
+        if tar.returncode:
+            raise RuntimeError("tar exited with status %s" % tar.returncode)
+        prefix = archive.rsplit('.', 1)[0]
+        return prefix
+
+    def getAction(self, extra=''):
+        f = urllib2.urlopen(self.repos + '/show_url')
+        url = f.readline().strip()
+        f.close()
+        return 'addGitSnapshot(%r, branch=%r, tag=%r%s)' % (
+                url, self.branch, self.getShortRev(), extra)
+ 
+    def fetchArchive(self, conarySource, snapPath):
+        if os.path.exists(snapPath):
+            return
+        archive = urllib.quote(os.path.basename(snapPath))
+        url = (self.repos + '/archive/'
+                + urllib.quote(self.revision) + '/' + archive)
+        f_in = urllib2.urlopen(url)
+        with open(snapPath, 'w') as f_out:
+            copyfileobj(f_in, f_out)
+        f_in.close()
+
+    def setRevision(self, rev):
+        super(WmsRepository, self).setRevision(rev)
+        if 'branch' in rev:
+            self.branch = rev['branch']
+        if 'path' in rev:
+            self.path = rev['path']
+

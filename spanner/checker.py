@@ -17,7 +17,6 @@ class Checker(object):
         self.cfg = cfg
         self.force_build = force
         self.branch = branch
-        self.control_dirs = [ self.cfg.projectsDir, self.cfg.externalDir ]
 
     def setForceBuild(self, targets):
         '''
@@ -88,7 +87,13 @@ class Checker(object):
         macros = plan.getMacros()
 
         # Check plans for branch in plan
-        branch = macros.get('sourceControlBranch', None)
+        branch = macros.get('branch', None)
+
+        if not branch:
+            # Support for legecy plans
+            branch = macros.get('sourceControlBranch', None)
+
+        branch %= macros
 
         # Make sure if we specified a branch it matches the plan
         if self.branch:
@@ -116,6 +121,7 @@ class Checker(object):
                             bobplan=path,
                         )
             pkgs.add(pkg)
+            import epdb;epdb.st()
         return pkgs
 
     def _get_commit_hash(self, pkg):
@@ -183,12 +189,19 @@ class Checker(object):
 
     def _get_packages(self, plans):
         data = {}
+        for section, paths in plans.iteritems():
+            if section == self.cfg.projectsDir:
+                pkgs = set()
+                for path in paths:
+                    pkgs.update(self._check_plans_in_dir(path))
+                data.setdefault(section, pkgs)
+            if section == self.cfg.externalDir:
+                # TODO Eval the external packages
+                data.setdefault(section, paths)
+            if section == self.cfg.productsDir:
+                # TODO Eval the group configs
+                data.setdefault(section, paths)
         import epdb;epdb.st()
-        for plan in plans:
-            for name in self.control_dirs:
-                for path in plan.get(name):
-                    pkgs = self._check_plans_in_dir(path)
-                    data.setdefault(name, pkgs)
         return data   
 
 
