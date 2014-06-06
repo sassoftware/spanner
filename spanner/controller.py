@@ -106,7 +106,7 @@ class WmsController(BaseController):
         self.branch = branch
         self.reposet = set()
         self.wms = wms.WmsRepository(self.base, self.path, self.branch)
-        self.ctrl = git.GitRepository(self._uri, self.branch)
+        self.ctrl = git.GitRepository(self.uri, self.branch)
 
     def _getUri(self):
         return self.wms.getGitUri()

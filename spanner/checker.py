@@ -5,6 +5,7 @@ from . import config
 from . import errors
 from . import package
 from . import controller
+from . import factory
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,6 @@ class Checker(object):
                             bobplan=path,
                         )
             pkgs.add(pkg)
-            import epdb;epdb.st()
         return pkgs
 
     def _get_commit_hash(self, pkg):
@@ -129,10 +129,11 @@ class Checker(object):
 
     def _get_conary_version(self, pkg):
         # Try and find conary versions 
+        cc = factory.ConaryClientFactory().getClient()
         revision = None
         version = None
         query = { pkg.target: { pkg.label: None, },}
-        latest = self.conaryClient.repos.getTroveLeavesByLabel(query)
+        latest = cc.repos.getTroveLeavesByLabel(query)
         if latest:
             logger.debug('Latest Version : %s' % str(latest))
             logger.debug('%s found on %s' % (pkg.target, pkg.label))
@@ -182,7 +183,6 @@ class Checker(object):
         for pkg in self._initial_packages(path):
             pkg.update(self._get_conary_version(pkg))
             pkg.update(self._detect_change(pkg))
-            pkg.update(self._get_repos(pkg))
             if pkg.target and pkg.repositories:
                 packages.setdefault(pkg.target, set()).add(pkg)
         return packages
@@ -191,7 +191,7 @@ class Checker(object):
         data = {}
         for section, paths in plans.iteritems():
             if section == self.cfg.projectsDir:
-                pkgs = set()
+                pkgs = {}
                 for path in paths:
                     pkgs.update(self._check_plans_in_dir(path))
                 data.setdefault(section, pkgs)

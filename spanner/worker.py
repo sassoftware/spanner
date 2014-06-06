@@ -111,6 +111,7 @@ class Worker(object):
         planpaths = self.fetch()
         import epdb;epdb.st()
         plans = self.read(planpaths)
+        import epdb;epdb.st()
         packageset = self.check(plans)
         import epdb;epdb.st()
         packageset = self.build(packageset)

@@ -32,4 +32,4 @@ if __name__ == '__main__':
     test = True
     
 
-    main(test0, force, branch, cfgfile, test)
+    main(test3, force, branch, cfgfile, test)

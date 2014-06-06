@@ -37,6 +37,8 @@ class Reader(object):
             for subdir in plans: 
                 if os.path.basename(root) == subdir:
                     for fn in files:
+                        if fn in self.cfg.fileNameBlackList:
+                            continue
                         plans.setdefault(subdir, set()).add(
                                         os.path.join(root, fn))
         return plans

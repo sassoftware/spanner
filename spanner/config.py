@@ -148,6 +148,7 @@ class SpannerConfiguration(MainConfig):
     planDir                     = (cfg.CfgString, '_plan')
     cacheDir                    = (cfg.CfgString, '_cache')
     gitTarget                   = (cfg.CfgString, 'git-repo')
+    fileNameBlackList           = (cfg.CfgList(cfg.CfgString), ['common.conf'])
 
     def __init__(self, config=None, readConfigFiles=False, ignoreErrors=False):
         super(SpannerConfiguration, self).__init__()

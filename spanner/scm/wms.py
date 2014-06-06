@@ -27,12 +27,12 @@ class WmsRepository(scm.ScmRepository):
         # FIXME Hardcoded default ot master for now
         self.branch = branch or 'master'
         self.pathq = None
-        self.repos = None
+        #self.repos = None
         self.poll = None 
         silo, subpath = self.path.split('/', 1)
         self.tar = subpath.replace('/','_') + '.tar'
         self.pathq = self._quote(silo) + '/' + self._quote(subpath)
-        self.repos = self.base + '/api/repos/' + self.pathq
+        #self.repos = self.base + '/api/repos/' + self.pathq
         self.locator = self.repos + '/' + 'show_url'
         self.archive = self.repos + '/archive'
         if self.branch:
@@ -80,7 +80,9 @@ class WmsRepository(scm.ScmRepository):
 
     def getGitUri(self):
         #FIXME might need to append .git
-        return self.fetchlines(self.locator)
+        result = self.fetchlines(self.locator)
+        assert len(result) == 1
+        return result[0]
 
     def readRevisions(self, filename):
         blob = ''
