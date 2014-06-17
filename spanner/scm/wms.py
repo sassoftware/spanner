@@ -62,19 +62,38 @@ class WmsRepository(scm.ScmRepository):
             return req.text
         return req.status_code
 
-    def _getTip(self):
-        result = self.fetchlines(self.poll)
-        assert len(result) == 1
-        path, branch, tip = result[0].split()
+    def _findTip(self, revisions):
+        for result in revisions:
+            path, branch, tip = result.split()
+            if path == self.pathq:
+                break
         assert len(tip) == 40
         return branch, tip
 
     def getTip(self):
-        return self._getTip()[1]
+        revisions = self.fetchlines(self.poll)
+        return self._findTip(revisions)[1]
 
     def setFromTip(self):
-        branch, tip = self._getTip()
-        self.branch = branch
+        revisions = self.fetchlines(self.poll)
+        branch, tip = self._findTip(revisions)
+        # FIXME Not sure we should set branch here
+        # might be safer to check the branch
+        # assert self.branch == branch
+        if not self.branch:
+            self.branch = branch
+        self.revision = tip
+        self.revIsExact = True
+
+    def setFromFile(self, filename):
+        results = self.readRevisions(filename)
+        revisions = [ x for x in results.split('\n') if x ]
+        branch, tip = self.findTip(revisions)
+        # FIXME Not sure we should set branch here
+        # might be safer to check the branch
+        # assert self.branch == branch
+        if not self.branch:
+            self.branch = branch
         self.revision = tip
         self.revIsExact = True
 
@@ -86,7 +105,7 @@ class WmsRepository(scm.ScmRepository):
 
     def readRevisions(self, filename):
         blob = ''
-        with open(filename, 'a') as revisions:
+        with open(filename, 'r') as revisions:
             blob = revisions.read()
         return blob
 
@@ -136,7 +155,7 @@ class WmsRepository(scm.ScmRepository):
                 + '-' + self.getShortRev()
                 + '.tar' + compress)
 
-    def snaphsot(self, workDir, subtree=None):
+    def snapshot(self, workDir, subtree=None):
         '''
         http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools/archive/78eed1cae30790e65ee599b04f93f23e93b84641/build-tools.tar
         Need to parseRevisionLine and extract the head
@@ -178,10 +197,8 @@ class WmsRepository(scm.ScmRepository):
             copyfileobj(f_in, f_out)
         f_in.close()
 
-    def setRevision(self, rev):
-        super(WmsRepository, self).setRevision(rev)
-        if 'branch' in rev:
-            self.branch = rev['branch']
-        if 'path' in rev:
-            self.path = rev['path']
+    def setRevision(self, filename=None):
+        if filename:
+            return self.setFromFile(filename)
+        return self.setFromTip()
 

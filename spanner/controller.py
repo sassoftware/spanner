@@ -71,6 +71,14 @@ class BaseController(object):
         '''
         raise NotImplementedError
 
+    def freeze(self, filename=None):
+        '''
+        Freeze scm revision for consistency
+        Override depending on Controller Type
+        '''
+        # Set self.ctrl.revision based on some criteria
+        revision = self.ctrl.setRevision(filename)
+        return revision
 
     def checkout(self):
         '''
@@ -97,6 +105,7 @@ class BaseController(object):
         return self.reader()
 
 
+
 class WmsController(BaseController):
     ControllerType = 'WMS'
 
@@ -105,21 +114,28 @@ class WmsController(BaseController):
         self.path = path
         self.branch = branch
         self.reposet = set()
-        self.wms = wms.WmsRepository(self.base, self.path, self.branch)
-        self.ctrl = git.GitRepository(self.uri, self.branch)
+        self.ctrl = wms.WmsRepository(self.base, self.path, self.branch)
 
     def _getUri(self):
-        return self.wms.getGitUri()
+        return self.ctrl.getGitUri()
 
     uri = property(_getUri)
 
     def reader(self):
-        data = self.wms.parseRevisionsFromUri()
+        data = self.ctrl.parseRevisionsFromUri()
         for name, info in data.iteritems():
             r = repo.Repo(name=name)
             r.update(info)
             self.reposet.add(r)
         return self.reposet
+
+    def check(self):
+        # FIXME MAYBE
+        # Assuming if I can talk to wms I can snapshot from wms
+        heads = self.ctrl.parseRevisionsFromUri(self.ctrl.poll)
+        if heads:
+            return True
+        return False
 
 
 Controller.register(WmsController)

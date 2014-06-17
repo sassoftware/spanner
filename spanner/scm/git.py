@@ -163,6 +163,29 @@ class GitRepository(scm.ScmRepository):
         assert len(rev) == 40
         return rev
 
+    def readTip(self, filename):
+        '''
+        This file needs to have the head in it
+        '''
+        blob = ''
+        with open(filename, 'r') as revfile:
+            blob = revfile.read()
+        revisions = [ x for x in blob.split('\n') if x ]
+        for result in revisions:
+            path, branch, tip = result.split()
+            if path == self.pathq:
+                break
+        assert len(tip) == 40
+        return tip
+
+    def setFromTip(self):
+        self.revision = self.getTip()
+        return self.revision
+
+    def setFromFile(self, filename):
+        self.revision = self.readTip(filename)
+        return self.revision
+        
     def updateCache(self):
         # Create the cache repo if needed.
         if not os.path.isdir(self.repo_dir):
@@ -195,13 +218,10 @@ class GitRepository(scm.ScmRepository):
         if p2.returncode:
             raise RuntimeError("tar exited with status %s" % p1.returncode)
 
-    def setRevision(self, rev):
-        super(GitRepository, self).setRevision(rev)
-        if 'branch' in rev:
-            self.branch = rev['branch']
-        if 'uri' in rev:
-            self.uri = rev['uri']
-
+    def setRevision(self, filename=None):
+        if filename:
+            return self.setFromFile(filename)
+        return self.setFromTip()
 
     def getAction(self, extra=''):
         return 'addGitSnapshot(%r, branch=%r, tag=%r%s)' % (
