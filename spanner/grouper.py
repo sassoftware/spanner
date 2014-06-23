@@ -9,45 +9,21 @@ logger = logging.getLogger(__name__)
 
 class Grouper(object):
 
-    def __init__(self, uri, branch, cache=None, cfg=None, test=False,
-                 plans=None):
-        self.uri = uri
-        self.cachedir = cache
-        self.branch = branch
-        self.identifier = '_'.join([self.branch, 
-                                    time.strftime('%Y.%m.%d_%H%M.%S')])
-        self.prepped = False
-        self.fetched = False
-        self._cclient = None
+    def __init__(self, packages, plans=None, cfg=None, test=False):
+        
+        self.packages = packages
+        self.plans = plans
         self._cfg = cfg
         if not self._cfg:
             self.getDefaultConfig()
-        if not self.cachedir:
-            self.cachedir = self._cfg.cacheDir
-        self.debug = self._cfg.debugMode
         self.test = test
-        self.head = None
-        self.plans = plans
-        if self.plans:
-            self.plans = [os.path.basename(plan) for plan in self.plans]
 
         if self._cfg.testOnly:
-            logger.warn('testOnly set in config file ignoring commandline')
+            logger.warn('testOnly set in config file ignoring commandline') 
             self.test = self._cfg.testOnly
-        self.bobexec = self._cfg.bobExec
-        self.logfile = self._cfg.logFile
-        self.tmpdir = self._cfg.tmpDir
-        if not os.path.exists(self.tmpdir):
-            os.makedirs(self.tmpdir)
-        assert os.path.exists(self.tmpdir)
-        self.plandir = os.path.join(self.tmpdir, 'plans')
-        self.commonDir = self._cfg.commonDir
-        self.commonFile = self._cfg.commonFile
-        self.packagesDir = self._cfg.packagesDir
-        self.force_build = []
-        self.commonLabel = None
 
-    def buildGroup(self, packages, groupname=None, external=None):
+
+    def buildGroup(self, groupname=None, external=None):
         # pkgs have to be formated into txt for the recipe template
         # either it is a comma seperated string of names 
         # or a string of names=version
@@ -79,8 +55,16 @@ class Grouper(object):
 
         pkgsList = []
 
-        for name, pkgs in packages.items():
+        for name, pkgs in self.packages.items():
+            # FIXME
+            # Maybe overkill
+            if name.endswith('-test'):
+                continue
             for pkg in pkgs:
+                # FIXME
+                # Probably best idea
+                if pkg.name.endswith('-test'):
+                    continue
                 if pkg.version:
                     pkgsList.append('%s=%s' % (pkg.name, str(pkg.version)))
                 else:
