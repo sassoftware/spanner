@@ -91,6 +91,10 @@ class ScmRepository(object):
         self.revision = self.getTip()
         self.revIsExact = True
 
+    def setRevision(self, rev):
+        self.revision = rev['id']
+        self.revIsExact = True
+
     def getShortRev(self):
         if self.revIsExact:
             return self.revision[:12]

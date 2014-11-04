@@ -127,6 +127,10 @@ class Checker(object):
     def _get_commit_hash(self, pkg):
         return self.pkg.controller.latest()
 
+    def _get_commit_version(self, pkg):
+        commit = self._get_commit_hash(pkg) or None
+        return { 'commit' : commit }
+
     def _get_conary_version(self, pkg):
         # Try and find conary versions 
         cc = factory.ConaryClientFactory().getClient()
@@ -181,6 +185,7 @@ class Checker(object):
     def _check_plans_in_dir(self, path):
         packages = {}
         for pkg in self._initial_packages(path):
+            pkg.update(self._get_commit_version(pkg))
             pkg.update(self._get_conary_version(pkg))
             pkg.update(self._detect_change(pkg))
             if pkg.target and pkg.repositories:

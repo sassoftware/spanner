@@ -1,0 +1,11 @@
+includeConfigFile common.conf
+
+# target configuration
+target []
+target sun-jdk
+
+[target:sun-jdk]
+version 7u15
+scm build-tools
+flavor_set x86_64
+sourceTree build-tools recipes/sun-jdk/

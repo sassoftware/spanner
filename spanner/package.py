@@ -11,7 +11,8 @@ class Package(object):
                  'buildLabel', 'targetLabel', 'sourceLabel',
                  'commit', 'branch', 'tag', 'allversions', 'latest',
                  'version', 'flavor', 'revision', 'uri', 'change',
-                 'log', 'bobplan']
+                 'log', 'bobplan', 'next',
+                ]
 
     def __init__(self, **kwargs):
         for s in self.__slots__:

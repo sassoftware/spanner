@@ -15,9 +15,8 @@ logger = logging.getLogger(__name__)
 
 class Builder(object):
 
-    def __init__(self, packages, controller, cfg=None, test=False):
-        self.packages = packages
-        self.controller = controller
+    def __init__(self, packageset, cfg=None, test=False):
+        self.packageset = packageset
         self._cfg = cfg
         if not self._cfg:
             self.getDefaultConfig()
@@ -33,15 +32,10 @@ class Builder(object):
         if not os.path.exists(self.tmpdir):
             os.makedirs(self.tmpdir)
         assert os.path.exists(self.tmpdir)
-        self.force_build = []
         self.commonLabel = None
-
-    def setForceBuild(self, targets):
-        '''
-        get a list of targets to build regardless
-        '''
-        for target in targets:
-            self.force_build.append(target)
+        self.projects = self.packageset[self._cfg.projectsDir]
+        self.products = self.packageset[self._cfg.productsDir]
+        self.external = self.packageset[self._cfg.externalDir]
 
     def getDefaultConfig(self):
         logger.info('Loading default cfg')
@@ -99,47 +93,46 @@ class Builder(object):
         return tobuild
 
     def build(self):
-        # TODO Change prep to cache... unwind names
-        self.prep()
-        if self.fetched:
-            self.plans = self.gather_plans()
-            packages = self.gather_packages(self.plans['packages'])
-            tobuild = self.handler(packages)
-            built_packages = []
-            failed_packages = []
-            seen_plans = []
-            skipped = []
-            for pkg in tobuild:
-                # lets not build pkgs more than once
-                if pkg.bobplan not in seen_plans:
-                    seen_plans.append(pkg.bobplan)
-                else:
-                    skipped.append(pkg.name)
-                    pkg.log = 'Built in %s' % pkg.bobplan
-                    packages.setdefault(pkg.name, set()).add(pkg)
-                    continue
+        packages = []
+        tobuild = self.handler(self.projects)
+        built_packages = []
+        failed_packages = []
+        seen_plans = []
+        skipped = []
 
-                rc, cmd = self._build(pkg.bobplan)
-                pkg.log = ('Failed: %s' if rc else 'Success: %s') % cmd
+        import epdb;epdb.st()
+
+        for pkg in tobuild:
+            # lets not build pkgs more than once
+            if pkg.bobplan not in seen_plans:
+                seen_plans.append(pkg.bobplan)
+            else:
+                skipped.append(pkg.name)
+                pkg.log = 'Built in %s' % pkg.bobplan
                 packages.setdefault(pkg.name, set()).add(pkg)
-                if rc:
-                    failed_packages.append(pkg)
-                else:
-                    built_packages.append(pkg)
+                continue
 
-            if self.test:
-                for name, pkgs in packages.items():
-                    for pkg in pkgs:
-                        logger.info('%s  :  %s\n' % (pkg.name, pkg.log))
-                logger.info('List of plans built: %s' % seen_plans)
-                logger.info('List of skipped packages: %s' % skipped)
+            rc, cmd = self._build(pkg.bobplan)
+            pkg.log = ('Failed: %s' if rc else 'Success: %s') % cmd
+            packages.setdefault(pkg.name, set()).add(pkg)
+            if rc:
+                failed_packages.append(pkg)
+            else:
+                built_packages.append(pkg)
 
-            logger.info('List of packages built: %s' %
-                        [pkg.name for pkg in built_packages])
+        if self.test:
+            for name, pkgs in packages.items():
+                for pkg in pkgs:
+                    logger.info('%s  :  %s\n' % (pkg.name, pkg.log))
+            logger.info('List of plans built: %s' % seen_plans)
+            logger.info('List of skipped packages: %s' % skipped)
 
-            if failed_packages:
-                logger.warn('List of failed package builds: %s' %
-                            [pkg.name for pkg in failed_packages])
+        logger.info('List of packages built: %s' %
+                    [pkg.name for pkg in built_packages])
+
+        if failed_packages:
+            logger.warn('List of failed package builds: %s' %
+                        [pkg.name for pkg in failed_packages])
 
         return packages, built_packages, failed_packages
 

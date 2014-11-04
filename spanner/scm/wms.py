@@ -37,6 +37,8 @@ class WmsRepository(scm.ScmRepository):
         self.archive = self.repos + '/archive'
         if self.branch:
             self.poll = self.repos + '/poll/' + self._quote(self.branch)
+        if not self.revision:
+            self.setRevision()
 
     @property
     def repos(self):
