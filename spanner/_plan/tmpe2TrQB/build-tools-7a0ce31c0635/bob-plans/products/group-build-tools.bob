@@ -1,9 +1,0 @@
-includeConfigFile common.conf
-
-target group-build-tools-tools
-
-[target:group-build-tools-tools]
-sourceTree build-tools recipes/group-build-tools.recipe
-version %(version)s.%(git)s
-scm build-tools
-flavor_set x86_64
