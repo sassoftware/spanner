@@ -31,10 +31,11 @@ class BaseController(object):
 
     CONTROLLERS = ('WMS', 'GIT', 'HG', 'LOCAL')
 
-    def __init__(self, base, path, branch=None): 
+    def __init__(self, base, path, branch=None, rev=None): 
         self.base = base       
         self.path = path
         self.branch = branch
+        self.rev = rev
         self.repos = {} 
     
     def _getUri(self):
@@ -109,21 +110,32 @@ class BaseController(object):
 class WmsController(BaseController):
     ControllerType = 'WMS'
 
-    def __init__(self, base, path, branch=None):
+    def __init__(self, base, path, branch=None, rev=None):
         self.base = base
         self.path = path
         self.branch = branch
         self.reposet = set()
+        self.revfile = 'revision.txt'
         self.ctrl = wms.WmsRepository(self.base, self.path, self.branch)
+        if rev:
+            self.ctrl.revision = rev
+
+    @property
+    def revision(self):
+        return self.ctrl.revision
+
+    def setExactRevision(self, rev):
+        self.ctrl.setRevision(rev=rev)
 
     def _getUri(self):
         return self.ctrl.getGitUri()
 
     uri = property(_getUri)
 
-    def reader(self, revfile=None):
-        if revfile and os.path.exists(revfile):
-            data = self.ctrl.parseRevisionsFromFilename(revfile)
+    def reader(self):
+        # Default to reading local rev file
+        if os.path.exists(self.revfile):
+            data = self.ctrl.parseRevisionsFromFilename(self.revfile)
         else:
             data = self.ctrl.parseRevisionsFromUri()
         for name, info in data.iteritems():
@@ -150,7 +162,7 @@ class GitController(BaseController):
 
     ControllerType = 'GIT'
 
-    def __init__(self, base, path, branch=None):
+    def __init__(self, base, path, branch=None, rev=None):
         self.base = base
         self.path = path
         self.branch = branch
@@ -158,6 +170,12 @@ class GitController(BaseController):
         self._uri = '/'.join([self.base, self.path])
         self.ctrl = git.GitRepository(self._uri, self.branch)
         self.gitcmds = git.GitCommands()
+        if rev:
+            self.ctrl.revision = rev
+
+    @property
+    def revision(self):
+        return self.ctrl.revision
 
     def check(self):
         heads = self.gitcmds.ls_remote(self._uri, self.branch)
@@ -189,13 +207,19 @@ class HgController(BaseController):
 
     ControllerType = 'HG'
 
-    def __init__(self, base, path, branch=None):
+    def __init__(self, base, path, branch=None, rev=None):
         self.base = base
         self.path = path
         self.branch = branch
         self.repos = {}
         self._uri = '/'.join([self.base, self.path])
         self.ctrl = hg.HgRepository(self._uri, self.branch)
+        if rev:
+            self.ctrl.revision = rev
+
+    @property
+    def revision(self):
+        return self.ctrl.revision
 
     def updatecache(self):
         self.ctrl.updateCache()
@@ -206,13 +230,19 @@ class LocalController(BaseController):
 
     ControllerType = 'LOCAL'
 
-    def __init__(self, base, path, branch=None):
+    def __init__(self, base, path, branch=None, rev=None):
         self.base = base
         self.path = path
         self.branch = branch
         self.repos = {} 
         self._uri = os.path.join(self.base, self.path)
         self.ctrl = local.LocalRepository(self._uri, self.branch)
+        if rev:
+            self.ctrl.revision = rev
+
+    @property
+    def revision(self):
+        return self.ctrl.revision
 
     def check(self):
         return os.path.exists(self._uri)

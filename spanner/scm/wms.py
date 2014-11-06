@@ -209,6 +209,7 @@ class WmsRepository(scm.ScmRepository):
         if rev:
             self.revision = rev['id']
             self.revIsExact = True
+            assert self.branch == rev['branch']
         else:
             self.setFromTip()
 

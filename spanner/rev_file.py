@@ -27,6 +27,7 @@ class RevisionFile(object):
         self.parse()
 
     def parse(self):
+        # Try to parse a tips file first
         try:
             for line in open('tips'):
                 _uri, _tip = line.split(' ', 1)
@@ -34,6 +35,7 @@ class RevisionFile(object):
             self.filename = 'tips'
         except IOError:
             pass
+        # Try to parse a revisions.txt second
         try:
             for line in open('revision.txt'):
                 _uri, _branch, _tip = line.split(' ', 2)

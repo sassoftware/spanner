@@ -4,6 +4,7 @@ import tempfile
 from conary.lib import util as conary_util
 
 from . import controller
+from rev_file import RevisionFile
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +26,16 @@ class Fetcher(object):
         self.uri = uri
         self.cfg = cfg
         self.branch = branch
+        self.revision = None
         for localdir in [ self.cfg.planDir, self.cfg.cacheDir ]:
             conary_util.mkdirChain(localdir)
         self.path = tempfile.mkdtemp(dir=self.cfg.planDir)
         self.subtree = self.cfg.plansSubDir
         if self.is_local(uri):
             self.subtree = None
-        self.controller = self.initialize_controller(uri, self.branch)
         self.fetched = False
+        self.rf = RevisionFile()
+        self.controller = self.initialize_controller(uri, self.branch)
 
     def is_local(self, uri):
         return uri.startswith('/') or uri.startswith('file:')
@@ -49,11 +52,17 @@ class Fetcher(object):
         paths = [ x for x in uri.split('/') ]
         base = '/'.join(paths[:3])
         path = '/'.join(paths[3:])
+        rev = None
         if self.is_local(uri):
             ctrltype = 'LOCAL'
         if base == self.cfg.wmsBase:
             path = path.replace('api/repos/', '')
             ctrltype = 'WMS'
+            # If we find a tips or revision.txt we use that version 
+            # Else we use the tip from rest api
+            tip = self.rf.revs.get(path)
+            if tip:
+                rev = tip.get('id')
         # Silly but if we do not specify branch at command line 
         # then we assume it is already asssigned unless we can extract it 
         # from the end of a git uri
@@ -66,6 +75,7 @@ class Fetcher(object):
                                             base,
                                             path,
                                             branch,
+                                            rev,
                                             )
 
     def _fetch(self):
@@ -76,9 +86,6 @@ class Fetcher(object):
         #    os.makedirs(self.path)
         logger.info('Checking out sources from %s to %s' %
                     (self.uri, self.path))
-        import epdb;epdb.st()
-        """set revisions from revisions.txt"""
-        """set tag if possible"""
         self.controller.snapshot(self.path, self.subtree)
 
     def fetch(self):
