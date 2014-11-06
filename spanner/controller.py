@@ -121,8 +121,11 @@ class WmsController(BaseController):
 
     uri = property(_getUri)
 
-    def reader(self):
-        data = self.ctrl.parseRevisionsFromUri()
+    def reader(self, revfile=None):
+        if revfile and os.path.exists(revfile):
+            data = self.ctrl.parseRevisionsFromFilename(revfile)
+        else:
+            data = self.ctrl.parseRevisionsFromUri()
         for name, info in data.iteritems():
             r = repo.Repo(name=name)
             r.update(info)
@@ -137,6 +140,9 @@ class WmsController(BaseController):
             return True
         return False
 
+    def latest(self):
+        # TODO Use revisions.txt file to set revision and return that.
+        return self.ctrl.getTip()
 
 Controller.register(WmsController)
 
@@ -167,11 +173,11 @@ class GitController(BaseController):
         return False
 
     def latest(self):
-        commits = []
+        HEAD = 'HEAD'
+        if self.branch:
+            HEAD = 'refs/heads/' + self.branch
         heads = self.gitcmds.ls_remote(self._uri, self.branch)
-        for head, commit in heads.items():
-            commits.append(commit)
-        return commits
+        return heads.get(HEAD)
 
     def updatecache(self):
         self.ctrl.updateCache()

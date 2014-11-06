@@ -37,7 +37,6 @@ class Worker(object):
             os.makedirs(self.tmpdir)
         assert os.path.exists(self.tmpdir)
 
-
     def getDefaultConfig(self, cfgFile=None):
         logger.info('Loading default cfg')
         if not cfgFile:
@@ -52,7 +51,6 @@ class Worker(object):
         '''
         fetch_plans = fetcher.Fetcher(self.uri, self.cfg, self.branch)
         return fetch_plans.fetch()
-        
 
     def read(self, path):
         '''
@@ -108,7 +106,11 @@ class Worker(object):
             print pkg.group
 
     def main(self):
+        start = time.time()
+        print "Begin gathering planpaths : %s" % start
         planpaths = self.fetch()
+        end = time.time() - start
+        print "End gathering planpaths : %s" % end
         import epdb;epdb.st()
         plans = self.read(planpaths)
         import epdb;epdb.st()

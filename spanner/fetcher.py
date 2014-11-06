@@ -76,6 +76,9 @@ class Fetcher(object):
         #    os.makedirs(self.path)
         logger.info('Checking out sources from %s to %s' %
                     (self.uri, self.path))
+        import epdb;epdb.st()
+        """set revisions from revisions.txt"""
+        """set tag if possible"""
         self.controller.snapshot(self.path, self.subtree)
 
     def fetch(self):
@@ -84,6 +87,7 @@ class Fetcher(object):
         '''
         if not self.fetched:
             # TODO Add code to controller type 
+            logger.info("Checking control source")
             check = self.controller.check()
             # TODO
             # One would think you would want to check self.fetched 

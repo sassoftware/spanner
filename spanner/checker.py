@@ -64,6 +64,8 @@ class Checker(object):
                 path = '/'.join(paths)
             if ctrltype in [ 'GIT', 'HG' ]:
                 base = '//'.join(paths[:2])
+                if base.startswith('file'):
+                    base = '///'.join(paths[:2])
                 path = '/'.join(paths[2:])
                 if len(path.split('?')) == 2:
                     path, branch = path.split('?')
@@ -125,8 +127,11 @@ class Checker(object):
         return pkgs
 
     def _get_commit_hash(self, pkg):
-        return self.pkg.controller.latest()
-
+        '''This needs to be from the revisions.txt if supplied'''
+        ctrlr = pkg.controllers.get(pkg.name)
+        if ctrlr:
+            return ctrlr.latest()
+        
     def _get_commit_version(self, pkg):
         commit = self._get_commit_hash(pkg) or None
         return { 'commit' : commit }
@@ -186,6 +191,7 @@ class Checker(object):
         packages = {}
         for pkg in self._initial_packages(path):
             pkg.update(self._get_commit_version(pkg))
+            """ UPDATE THE REVISION IN CTRLR """
             pkg.update(self._get_conary_version(pkg))
             pkg.update(self._detect_change(pkg))
             if pkg.target and pkg.repositories:

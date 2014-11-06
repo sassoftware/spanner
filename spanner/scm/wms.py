@@ -28,6 +28,8 @@ class WmsRepository(scm.ScmRepository):
         self.branch = branch or 'master'
         self.pathq = None
         #self.repos = None
+        self.revision = None
+        self.tag = None
         self.poll = None 
         silo, subpath = self.path.split('/', 1)
         self.tar = subpath.replace('/','_') + '.tar'
@@ -40,12 +42,14 @@ class WmsRepository(scm.ScmRepository):
         if not self.revision:
             self.setRevision()
 
+    def settag(self, tag):
+        self.tag = tag
+
     @property
     def repos(self):
         silo, subpath = self.path.split('/', 1)
         pathq = self._quote(silo) + '/' + self._quote(subpath)
         return self.base + '/api/repos/' + pathq
-
 
     @staticmethod
     def _quote(foo):
@@ -199,8 +203,12 @@ class WmsRepository(scm.ScmRepository):
             copyfileobj(f_in, f_out)
         f_in.close()
 
-    def setRevision(self, filename=None):
+    def setRevision(self, rev=None, filename=None):
         if filename:
-            return self.setFromFile(filename)
-        return self.setFromTip()
+            self.setFromFile(filename)
+        if rev:
+            self.revision = rev['id']
+            self.revIsExact = True
+        else:
+            self.setFromTip()
 

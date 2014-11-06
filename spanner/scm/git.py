@@ -39,11 +39,20 @@ class GitCommands(object):
         cmd = ['git', 'ls-remote', uri]
         if branch:
             cmd.append(branch)
-        return self.run_git(cmd)
+        stdout = self.run_git(cmd)
+        heads = {}
+        for head in stdout.splitlines():
+            sha, name = head.split('\t')
+            assert sha and name
+            heads[name] = sha
+        return heads
 
     def ls_tree(self, branch):
         cmd = ['git', 'ls-tree', '-r', '--name-only', branch]
-        return self.run_git(cmd)
+        stdout = self.run_git(cmd)
+        files = {}
+        files[branch] = [x for x in stdout.splitlines() if x]
+        return files
 
     def show_file(self, path):
         uri = '''%s:%s''' % (self.branch, path)
