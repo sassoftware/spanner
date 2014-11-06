@@ -6,6 +6,8 @@ from . import errors
 from . import package
 from . import controller
 from . import factory
+from rev_file import RevisionFile
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ class Checker(object):
         self.cfg = cfg
         self.force_build = force
         self.branch = branch
+        self.rf = RevisionFile()
 
     def setForceBuild(self, targets):
         '''
@@ -57,11 +60,15 @@ class Checker(object):
         for name, values in repositories.iteritems():
             ctrltype = values[0].upper()
             paths = [ x for x in values[1].split('/') if x ]
+            rev = None
             if len(values) == 3:
                 branch = values[2]
             if ctrltype == 'WMS':
                 base = plan.wmsBase
                 path = '/'.join(paths)
+                tip = self.rf.revs.get(path)
+                if tip:
+                    rev = tip.get('id')
             if ctrltype in [ 'GIT', 'HG' ]:
                 base = '//'.join(paths[:2])
                 if base.startswith('file'):
@@ -70,8 +77,13 @@ class Checker(object):
                 if len(path.split('?')) == 2:
                     path, branch = path.split('?')
             if base and path:
-                ctrlr = controller.Controller.create(ctrltype, 
-                                                base, path, branch)
+                ctrlr = controller.Controller.create(   
+                                                    ctrltype, 
+                                                    base, 
+                                                    path, 
+                                                    branch,
+                                                    rev,
+                                                    )
                 controllers.setdefault(name, ctrlr)
         return controllers
 
@@ -127,13 +139,15 @@ class Checker(object):
         return pkgs
 
     def _get_commit_hash(self, pkg):
-        '''This needs to be from the revisions.txt if supplied'''
+        ''' 
+            pkg = pkg object with ctrlrs
+            The commit hash we want to build 
+            needs to be from the revisions.txt if supplied
+        '''
+        commit = None
         ctrlr = pkg.controllers.get(pkg.name)
         if ctrlr:
-            return ctrlr.latest()
-        
-    def _get_commit_version(self, pkg):
-        commit = self._get_commit_hash(pkg) or None
+            commit = ctrlr.revision
         return { 'commit' : commit }
 
     def _get_conary_version(self, pkg):
@@ -190,8 +204,8 @@ class Checker(object):
     def _check_plans_in_dir(self, path):
         packages = {}
         for pkg in self._initial_packages(path):
-            pkg.update(self._get_commit_version(pkg))
-            """ UPDATE THE REVISION IN CTRLR """
+            # Commit hash we want to build
+            pkg.update(self._get_commit_hash(pkg))
             pkg.update(self._get_conary_version(pkg))
             pkg.update(self._detect_change(pkg))
             if pkg.target and pkg.repositories:
@@ -212,10 +226,7 @@ class Checker(object):
             if section == self.cfg.productsDir:
                 # TODO Eval the group configs
                 data.setdefault(section, paths)
-        import epdb;epdb.st()
         return data   
-
-
 
     def check(self):
         return self._get_packages(self.plans)
