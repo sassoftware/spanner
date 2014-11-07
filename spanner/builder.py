@@ -72,12 +72,12 @@ class Builder(object):
         if name and version:
             logger.info('Building package %s=%s' % (name, version))
             '''--set-version=conary="${Version}"'''
-            logger.debug('Because of an ugly hack by W '
-                         'we have to pass the macro for the name '
-                         'bob-5 should fix this')
-            #versionline = '--set-version=%s=%s' % (name, version)
-            pkgmacro = '%(packageName)s'
-            versionline = '--set-version=%s=%s' % (pkgmacro, version)
+            #logger.debug('Because of an ugly hack by W '
+            #             'we have to pass the macro for the name '
+            #             'bob-5 should fix this')
+            #pkgmacro = '%(packageName)s'
+            #versionline = '--set-version=%s=%s' % (pkgmacro, version)
+            versionline = '--set-version=%s=%s' % (name, version)
             cmd.append(versionline)
         if name and tag:
             logger.info('Building package %s with tag=%s' % (name, tag))
@@ -143,6 +143,7 @@ class Builder(object):
                 continue
 
             rc, cmd = self._build(  path=pkg.bobplan, 
+                                    name=pkg.name,
                                     version=pkg.commit, 
                                     tag=pkg.tag,
                             )

@@ -169,6 +169,34 @@ class Checker(PlanUtils):
             
         return {'revision': revision, 'version': version, 'latest': latest}
 
+    def _get_conary_versions(self, packages):
+        # Try and find conary versions 
+        cc = factory.ConaryClientFactory().getClient()
+        query = {}
+
+ 
+        for _n, pkg in packages.items():
+            for _p in pkg:
+                query.update({ _p.target: { _p.label: None, },})
+        
+        latestTroves = cc.repos.getTroveLeavesByLabel(query)
+        
+        for _n, pkg in packages.items():
+            for _p in pkg:
+                latest = latestTroves.get(_p.target)
+                if latest:
+                    logger.debug('%s found on %s' % (_p.target, _p.label))
+                    version = max(latest)
+                    logger.debug('Latest Version : %s' % version.asString())
+                    revision = version.trailingRevision().version  
+                    logger.debug('Found revision %s of %s' % (str(revision),_p.target))
+            
+                    _p.update({'revision': revision, 
+                            'version': version, 
+                            'latest': latest})
+                packages.setdefault(_p.name, set()).add(_p)
+        return packages
+
     def _detect_change(self, pkg):
         # Start by assuming package did not change
         change = False
@@ -208,7 +236,7 @@ class Checker(PlanUtils):
         for pkg in self._initial_packages(path):
             # Commit hash we want to build
             pkg.update(self._get_commit_hash(pkg))
-            pkg.update(self._get_conary_version(pkg))
+            #pkg.update(self._get_conary_version(pkg))
             pkg.update(self._detect_change(pkg))
             if pkg.target and pkg.repositories:
                 packages.setdefault(pkg.target, set()).add(pkg)
@@ -224,6 +252,7 @@ class Checker(PlanUtils):
                 pkgs = {}
                 for path in paths:
                     pkgs.update(self._check_plans_in_dir(path))
+                pkgs = self._get_conary_versions(pkgs)
                 data.setdefault(section, pkgs)
 
             # TODO Eval each dir seperately if necessary
