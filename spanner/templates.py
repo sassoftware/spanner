@@ -22,6 +22,23 @@ from conary import trovetup
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_RECIPE_TEMPLATE = """
+class {0}(GroupSetRecipe):
+    name = '{1}'
+    version = '{2}'
+
+    def setup(r):
+        r.dumpAll()
+
+        local = r.Repository(r.cfg.buildLabel, r.flavor)
+
+        pkgs = local.latestPackages()
+
+        r.Group(pkgs, checkPathConflicts=False, scripts=None)
+
+"""
+
+
 GROUP_RECIPE_TEMPLATE = """
 class {0}(GroupSetRecipe):
     name = '{1}'
@@ -52,13 +69,16 @@ class GroupTemplate(object):
         return getattr(self, flag)
 
     def createRecipe(self):
+        className = ''.join([string.capwords(x) for x 
+                                in self.name.split('-')])
         if self.pkgs:
             pkgs = [ "'%s'" % x for x in self.pkgs]
             pkgString = ',\n            '.join(pkgs)
-            className = ''.join([string.capwords(x) for x in self.name.split('-')])
-        return GROUP_RECIPE_TEMPLATE.format(className, 
+            return  GROUP_RECIPE_TEMPLATE.format(className, 
                                     self.name, self.version, pkgString)
 
+        return  DEFAULT_RECIPE_TEMPLATE.format(className, 
+                                    self.name, self.version)
 
     def getRecipe(self):
         if not self.recipe:

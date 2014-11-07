@@ -142,7 +142,7 @@ class SpannerConfiguration(MainConfig):
     projectsDir                 = (cfg.CfgString, 'projects')
     productsDir                 = (cfg.CfgString, 'products')
     externalDir                 = (cfg.CfgString, 'external')
-    commonDir                   = (cfg.CfgString, 'common')
+    commonDir                   = (cfg.CfgString, 'config') # common
     commonFile                  = (cfg.CfgString, 'common.conf')
     groupConfig                 = (cfg.CfgString, 'group.conf')
     planDir                     = (cfg.CfgString, '_plan')

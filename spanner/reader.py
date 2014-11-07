@@ -24,6 +24,7 @@ class Reader(object):
         self.subdirs = [ self.cfg.projectsDir, 
                          self.cfg.productsDir,
                          self.cfg.externalDir,
+                         self.cfg.commonDir,
                         ]
 
     def _get_plans(self):

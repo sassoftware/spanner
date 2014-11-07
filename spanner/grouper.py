@@ -9,10 +9,8 @@ logger = logging.getLogger(__name__)
 
 class Grouper(object):
 
-    def __init__(self, packages, plans=None, cfg=None, test=False):
-        
-        self.packages = packages
-        self.plans = plans
+    def __init__(self, packageset, cfg=None, test=False, plans=None):
+        self.packageset = packageset
         self._cfg = cfg
         if not self._cfg:
             self.getDefaultConfig()
@@ -22,22 +20,31 @@ class Grouper(object):
             logger.warn('testOnly set in config file ignoring commandline') 
             self.test = self._cfg.testOnly
 
+        self.plans = plans
+
+        self.projects = self.packageset.get(self._cfg.projectsDir)
+        self.products = self.packageset.get(self._cfg.productsDir)
+        self.external = self.packageset.get(self._cfg.externalDir)
 
     def buildGroup(self, groupname=None, external=None):
         # pkgs have to be formated into txt for the recipe template
         # either it is a comma seperated string of names 
         # or a string of names=version
         # TODO add code to handle no version
+        from . import checker
+    
+        reader = checker.Checker()._read_plans
         
-        if not self.plans:
-            self.prep()
-            if self.fetched:
-                self.plans = self.gather_plans()
-       
-        fn = [ x for x in self.plans['common'] 
-                            if x.endswith(self._cfg.groupConfig) ][0]
+        assert self.plans
 
-        group_plan = self.read_plan(fn)
+        common = self.plans.get(self._cfg.commonDir)
+
+        fn = [ x for x in common if x.endswith(self._cfg.groupConfig) ]
+
+
+        group_plan = self.reader(fn)
+
+        import epdb;epdb.st()
 
         macros = group_plan.getMacros()
 
@@ -89,6 +96,10 @@ class Grouper(object):
         grp = groups.GroupBuilder(template)
 
         return grp.fricassee()      
+
+    def group(self):
+        # TODO Finish buildGroup
+        return self.buildGroup()
 
     def main(self):
         # TODO Finish buildGroup

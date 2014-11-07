@@ -5,7 +5,7 @@ import tempfile
 import time
 from collections import defaultdict
 
-
+from ccfactory import ConaryClientFactory as _ccf
 from . import config
 from . import errors
 
@@ -36,11 +36,21 @@ class Builder(object):
         self.projects = self.packageset[self._cfg.projectsDir]
         self.products = self.packageset[self._cfg.productsDir]
         self.external = self.packageset[self._cfg.externalDir]
+        self._cclient = None
 
     def getDefaultConfig(self):
         logger.info('Loading default cfg')
         self._cfg = config.SpannerConfiguration()
         self._cfg.read()
+
+
+    def _getClient(self, force=False):
+        if self._cclient is None or force:
+            self._cclient = _ccf().getClient(
+                model=False)
+        return self._cclient
+
+    conaryClient = property(_getClient)
 
 
     def _build(self, path, name=None, version=None, tag=None):
@@ -83,6 +93,29 @@ class Builder(object):
         p.communicate()
         return p.returncode, ' '.join(cmd)
 
+
+    def updatePkgVersion(self, pkg):
+        # Try and find conary versions
+        revision = None
+        version = None
+        query = { pkg.target: { pkg.label: None, },}
+        latest = self.conaryClient.repos.getTroveLeavesByLabel(query)
+        if latest:
+            logger.debug('Latest Version : %s' % str(latest))
+            logger.debug('%s found on %s' % (pkg.target, pkg.label))
+            versions = latest[pkg.target]
+            version = max(versions)
+            revision = version.trailingRevision().version
+            logger.debug('Found revision %s of %s' % 
+                            (str(revision),pkg.target))
+
+            if version and revision:
+                pkg.update({'revision': revision,
+                            'version': version,
+                            'latest': latest,
+                            })
+        return pkg
+
     def handler(self, pkgs):
         tobuild = set([])
         for name, pkg in pkgs.iteritems():
@@ -92,16 +125,14 @@ class Builder(object):
                     tobuild.add(_p)
         return tobuild
 
+
     def build(self):
-        packages = []
+        packages = {}
         tobuild = self.handler(self.projects)
         built_packages = []
         failed_packages = []
         seen_plans = []
         skipped = []
-
-        import epdb;epdb.st()
-
         for pkg in tobuild:
             # lets not build pkgs more than once
             if pkg.bobplan not in seen_plans:
@@ -112,14 +143,19 @@ class Builder(object):
                 packages.setdefault(pkg.name, set()).add(pkg)
                 continue
 
-            rc, cmd = self._build(pkg.bobplan)
+            rc, cmd = self._build(  path = pkg.bobplan, 
+                                    version=pkg.commit, 
+                                    tag=pkg.tag,
+                            )
+
             pkg.log = ('Failed: %s' if rc else 'Success: %s') % cmd
-            packages.setdefault(pkg.name, set()).add(pkg)
             if rc:
                 failed_packages.append(pkg)
             else:
+                pkg = self.updatePkgVersion(pkg)
                 built_packages.append(pkg)
-
+            packages.setdefault(pkg.name, set()).add(pkg)
+        
         if self.test:
             for name, pkgs in packages.items():
                 for pkg in pkgs:
@@ -134,7 +170,7 @@ class Builder(object):
             logger.warn('List of failed package builds: %s' %
                         [pkg.name for pkg in failed_packages])
 
-        return packages, built_packages, failed_packages
+        return packages
 
     def main(self):
         # TODO Finish buildGroup
