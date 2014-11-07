@@ -24,8 +24,7 @@ class BaseUtil(object):
     
     def main(self):
         pass
-
-         
+        
 
 class BaseFileUtil(BaseUtil):
 
@@ -42,6 +41,11 @@ class BaseFileUtil(BaseUtil):
         assert os.path.exists(uri)
         return False
 
+    def isLocal(self, uri=None):
+        if not uri:
+            uri = self.uri        
+        return uri.startswith('/') or uri.startswith('file:')
+
     def genDirPath(self, uri, subdir):
         url = urlparse.urlparse(uri)
         repo = os.path.basename(url.path).replace('.git','')
@@ -53,7 +57,13 @@ class BaseFileUtil(BaseUtil):
         else:
             path = os.path.join(os.getcwd(), path)
         return path
-  
+
+    def normalizePath(self, uri):
+        if uri.startswith('./') or uri.startswith('../'):
+            return os.path.abspath(uri)
+        return uri
+
+
 
 class BaseConaryUtil(BaseUtil):
     
@@ -63,7 +73,6 @@ class BaseConaryUtil(BaseUtil):
         self._cclient = conaryclient.ConaryClient(self._ccfg)
         self._repos = self._cclient.getRepos()
 
- 
  
 
 class BuildReqs(BaseConaryUtil):

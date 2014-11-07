@@ -11,23 +11,7 @@ from rev_file import RevisionFile
 
 logger = logging.getLogger(__name__)
 
-
-class Checker(object):
-
-    def __init__(self, plans, cfg, force=[], branch=None, test=False):
-        self.plans = plans
-        self.test = test
-        self.cfg = cfg
-        self.force_build = force
-        self.branch = branch
-        self.rf = RevisionFile()
-
-    def setForceBuild(self, targets):
-        '''
-        get a list of targets to build regardless
-        '''
-        for target in targets:
-            self.force_build.append(target)
+class PlanUtils(object):
 
     def _read_plan(self, path):
         '''
@@ -86,6 +70,24 @@ class Checker(object):
                                                     )
                 controllers.setdefault(name, ctrlr)
         return controllers
+
+
+class Checker(PlanUtils):
+
+    def __init__(self, plans, cfg, force=[], branch=None, test=False):
+        self.plans = plans
+        self.test = test
+        self.cfg = cfg
+        self.force_build = force
+        self.branch = branch
+        self.rf = RevisionFile()
+
+    def setForceBuild(self, targets):
+        '''
+        get a list of targets to build regardless
+        '''
+        for target in targets:
+            self.force_build.append(target)
 
     def _initial_packages(self, path):
 
@@ -215,17 +217,24 @@ class Checker(object):
     def _get_packages(self, plans):
         data = {}
         for section, paths in plans.iteritems():
-            if section == self.cfg.projectsDir:
+            if section in [ self.cfg.projectsDir, 
+                            self.cfg.externalDir,
+                            self.cfg.productsDir,
+                            ]:
                 pkgs = {}
                 for path in paths:
                     pkgs.update(self._check_plans_in_dir(path))
                 data.setdefault(section, pkgs)
-            if section == self.cfg.externalDir:
+
+            # TODO Eval each dir seperately if necessary
+            #if section == self.cfg.externalDir:
                 # TODO Eval the external packages
-                data.setdefault(section, paths)
-            if section == self.cfg.productsDir:
-                # TODO Eval the group configs
-                data.setdefault(section, paths)
+                #data.setdefault(section, paths)
+
+            #if section == self.cfg.productsDir:
+                # TODO Eval the products packages
+                #data.setdefault(section, paths)
+
         return data   
 
     def check(self):

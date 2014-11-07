@@ -15,7 +15,6 @@
 #
 
 from . import factory
-from . import templates
 from conary import changelog
 from conary.conaryclient import filetypes
 from conary.build import cook

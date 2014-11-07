@@ -73,7 +73,7 @@ class Worker(object):
                             self.force, self.branch, self.test)
         return changes.check()
 
-    def build(self, packageset):
+    def build(self, packageset, products=False):
         '''
         pass in set of package objects
         call bob for packages that need to be built
@@ -82,9 +82,11 @@ class Worker(object):
         '''
         # builder returns set of packages updated with built flag set
         b = builder.Builder(packageset, self.cfg, self.test)
-        return b.build()
+        if products:
+            return b.buildProducts()
+        return b.buildProjects()
 
-    def group(self, packageset):
+    def group(self, packageset, plans=None):
         '''
         pass in set of package objects
         look up conary versions
@@ -92,7 +94,7 @@ class Worker(object):
         create a group with the specified versions of the packages
         cook group
         '''
-        g = grouper.Grouper(packageset, self.cfg, self.test)
+        g = grouper.Grouper(packageset, self.cfg, self.test, plans)
         return g.group()
 
     def display(self, packageset):
@@ -100,10 +102,7 @@ class Worker(object):
         pass in set of package objects
         log built, groupname
         '''
-        for pkg in packageset:
-            print pkg.built
-            print pkg.fail
-            print pkg.group
+        pass
 
     def main(self):
         start = time.time()
@@ -111,14 +110,16 @@ class Worker(object):
         planpaths = self.fetch()
         end = time.time() - start
         print "End gathering planpaths : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         plans = self.read(planpaths)
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         packageset = self.check(plans)
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         packageset = self.build(packageset)
+        #import epdb;epdb.st()
+        self.group(packageset, plans=plans)
         import epdb;epdb.st()
-        packageset = self.group(packageset)
+        packageset = self.build(packageset, products=True)
         import epdb;epdb.st()
         self.display(packageset)
 

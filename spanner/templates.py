@@ -73,7 +73,7 @@ class GroupTemplate(object):
                                 in self.name.split('-')])
         if self.pkgs:
             pkgs = [ "'%s'" % x for x in self.pkgs]
-            pkgString = ',\n            '.join(pkgs)
+            pkgString = ',\n\t\t'.join(pkgs)
             return  GROUP_RECIPE_TEMPLATE.format(className, 
                                     self.name, self.version, pkgString)
 

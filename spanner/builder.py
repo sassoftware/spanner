@@ -5,7 +5,7 @@ import tempfile
 import time
 from collections import defaultdict
 
-from ccfactory import ConaryClientFactory as _ccf
+from factory import ConaryClientFactory as _ccf
 from . import config
 from . import errors
 
@@ -126,9 +126,8 @@ class Builder(object):
         return tobuild
 
 
-    def build(self):
-        packages = {}
-        tobuild = self.handler(self.projects)
+    def build(self, packages):
+        tobuild = self.handler(packages)
         built_packages = []
         failed_packages = []
         seen_plans = []
@@ -143,7 +142,7 @@ class Builder(object):
                 packages.setdefault(pkg.name, set()).add(pkg)
                 continue
 
-            rc, cmd = self._build(  path = pkg.bobplan, 
+            rc, cmd = self._build(  path=pkg.bobplan, 
                                     version=pkg.commit, 
                                     tag=pkg.tag,
                             )
@@ -172,10 +171,19 @@ class Builder(object):
 
         return packages
 
-    def main(self):
+    def buildProjects(self):
         # TODO Finish buildGroup
-        return self.build()
+        projects = self.build(self.projects)
+        self.packageset[self._cfg.projectsDir].update(projects)
+        return self.packageset
 
+    def buildProducts(self):
+        products = self.build(self.products)
+        self.packageset[self._cfg.productsDir].update(products)
+        return self.packageset
+
+    def main(self):
+        return self.buildProjects()
 
 if __name__ == '__main__':
     import sys
