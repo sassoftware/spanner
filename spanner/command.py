@@ -97,16 +97,21 @@ class BuilderCommand(SpannerCommand):
     def runCommand(self, cfg, argSet, params, **kw):
         self.cfg = cfg
         self.cfgfile = argSet.pop('cfgfile', None)
-        self.branches = argSet.pop('branch', None)
+        self.branch = argSet.pop('branch', None)
         self.test = argSet.pop('dry-run', False)
         self.group = argSet.pop('group', False)
 
+        if not len(params) >= 3:
+            return self.usage()
+
         self.uri = params[2]
-        force_builds = params[3:]
+        
+        force_builds = params[3:] or []
 
         if not self.shouldRun():
             logger.info('Builder will not run, exiting.')
             sys.exit(2)
+
 
         spanner = worker.Worker(    uri=self.uri, 
                                     force=force_builds, 

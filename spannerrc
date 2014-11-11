@@ -1,8 +1,5 @@
 
 configPath  ./common.conf
-scmType     git
-scmUri      http://gitgrid.unx.sas.com
-scmPlans    %(scmUri)s/utilities.ci.bobplans.git
 bobExec     /usr/bin/bob-4.0
 tmpDir      tmp
 logging     True
@@ -10,14 +7,11 @@ logFile     spanner.log
 lockFile    lock-spanner
 buildAll    False
 
-gitTarget   git-repo
-
 targetLabel foo.bar@foo:foo-bar-1
 
+wmsBase 'http://wheresmystuff.unx.sas.com'
 
-macros gitrepo %(scmUri)s
 macros target_host newton.eng.rpath.com
-macros scc http://scc.unx.sas.com
 
 [plans:bobplans]
 scm %(scmPlans)s
