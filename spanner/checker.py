@@ -128,6 +128,7 @@ class Checker(PlanUtils):
             repositories = self._get_repositories(plan, branch)
             controllers = self._get_controllers(plan, branch)   
             # Create initial package
+            bobsect = plan.getSection('target:%s'%target)
             pkg = package.Package(  name=target,
                             target=target,
                             change=False,
@@ -136,6 +137,7 @@ class Checker(PlanUtils):
                             label=label,
                             controllers=controllers,
                             bobplan=path,
+                            scm=bobsect.scm,
                         )
             pkgs.add(pkg)
         return pkgs
@@ -147,10 +149,27 @@ class Checker(PlanUtils):
             needs to be from the revisions.txt if supplied
         '''
         commit = None
-        ctrlr = pkg.controllers.get(pkg.name)
+        ctrlr = pkg.controllers.get(pkg.scm)
+        if not ctrlr and pkg.controllers:
+            # TODO
+            # add revision.txt info to source pkg metadata 
+            # so we can figure out the revisions 
+            # without knowing the conary version
+            # FIXME
+            # Currently do not support multiple 
+            # scms not named after package
+            assert len(pkg.controllers) == 1
+            ctrlr = pkg.controllers.itervalues().next()
         if ctrlr:
             commit = ctrlr.revision
         return { 'commit' : commit }
+
+    def _get_commit_hashes(self, packages):
+        for _n, pkg in packages.items():
+            for _p in pkg:
+                _p.update(self._get_commit_hash(_p))
+                packages.setdefault(_n, set()).add(_p)
+        return packages
 
     def _get_conary_version(self, pkg):
         # Try and find conary versions 
@@ -173,7 +192,6 @@ class Checker(PlanUtils):
         # Try and find conary versions 
         cc = factory.ConaryClientFactory().getClient()
         query = {}
-
  
         for _n, pkg in packages.items():
             for _p in pkg:
@@ -194,7 +212,7 @@ class Checker(PlanUtils):
                     _p.update({'revision': revision, 
                             'version': version, 
                             'latest': latest})
-                packages.setdefault(_p.name, set()).add(_p)
+                packages.setdefault(_n, set()).add(_p)
         return packages
 
     def _detect_change(self, pkg):
@@ -230,17 +248,21 @@ class Checker(PlanUtils):
 
         return {'change': change}
 
-
+    def _detect_changes(self, packages):
+        for _n, pkg in packages.items():
+            for _p in pkg:
+                _p.update(self._detect_change(_p))
+                packages.setdefault(_n, set()).add(_p)
+        return packages
+        
     def _check_plans_in_dir(self, path):
         packages = {}
         for pkg in self._initial_packages(path):
-            # Commit hash we want to build
-            pkg.update(self._get_commit_hash(pkg))
-            #pkg.update(self._get_conary_version(pkg))
-            pkg.update(self._detect_change(pkg))
             if pkg.target and pkg.repositories:
-                packages.setdefault(pkg.target, set()).add(pkg)
+                #packages.setdefault(pkg.target, set()).add(pkg)
+                packages.setdefault(path, set()).add(pkg)
         return packages
+
 
     def _get_packages(self, plans):
         data = {}
@@ -253,6 +275,8 @@ class Checker(PlanUtils):
                 for path in paths:
                     pkgs.update(self._check_plans_in_dir(path))
                 pkgs = self._get_conary_versions(pkgs)
+                pkgs = self._get_commit_hashes(pkgs)
+                pkgs = self._detect_changes(pkgs)
                 data.setdefault(section, pkgs)
 
             # TODO Eval each dir seperately if necessary

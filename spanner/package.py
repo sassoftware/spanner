@@ -11,7 +11,7 @@ class Package(object):
                  'buildLabel', 'targetLabel', 'sourceLabel',
                  'commit', 'branch', 'tag', 'allversions', 'latest',
                  'version', 'flavor', 'revision', 'uri', 'change',
-                 'log', 'bobplan', 'next',
+                 'log', 'bobplan', 'next', 'scm',
                 ]
 
     def __init__(self, **kwargs):
