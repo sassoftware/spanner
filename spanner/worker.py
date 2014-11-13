@@ -115,25 +115,25 @@ class Worker(object):
         planpaths = self.fetch()
         end = time.time() - _start
         print "End gathering planpaths : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         start = time.time()
         print "Begin reading plans : %s" % start
         plans = self.read(planpaths)
         end = time.time() - start
         print "End reading plans : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         start = time.time()
         print "Begin checking plans : %s" % start
         packageset = self.check(plans)
         end = time.time() - start
         print "End checking plans : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         start = time.time()
         print "Begin building projects : %s" % start
         packageset = self.build(packageset)
         end = time.time() - start
         print "End building projects : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         start = time.time()
         print "Begin cooking group : %s" % start
         self.group(packageset, plans=plans)

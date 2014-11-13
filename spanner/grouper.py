@@ -5,6 +5,10 @@ import time
 from . import templates
 from . import groups
 from . import config
+from . import factory
+
+from conary import display
+from conary.conaryclient.cmdline import parseTroveSpec
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +54,42 @@ class Grouper(object):
                 plan._macros = Macros(macros)
         return plan
 
+    def _get_conary_pkg(self, trvspec):
+        latest = None
+        # Try and find conary versions 
+        cc = factory.ConaryClientFactory().getClient()
+        ss = cc.getSearchSource(flavor=0)
+        trvspec = parseTroveSpec(trvspec)
+        matches = ss.findTroves([trvspec], bestFlavor=False, allowMissing=True)
+        # Parse trvspec and fetch that trove
+        if matches:
+            latest = max(matches[trvspec])
+        return latest
+
+    def _find_group_troves(self, topLevelGroups):
+        interestingTroves = {}
+        cc = factory.ConaryClientFactory().getClient()
+        ss = cc.getSearchSource(flavor=0)
+        for troveTup, troveObj, flags, indent in display.iterTroveList(
+                                                ss, topLevelGroups,
+                                                recurseAll = True,
+                                                recursePackages = True,
+                                                showNotByDefault = True,
+                                                showNotExists = True):
+            name, version, flavor = troveTup
+            if ':' not in name and not name.startswith('group-'):
+                interestingTroves.setdefault(troveTup.name, []).append(troveTup)
+        return interestingTroves
+
+    def _get_group_versions(self, group, label):
+        grpTroves = {}
+        trvspec = '%s=%s' % (group, label)
+        grp = self._get_conary_pkg(trvspec)
+        if grp:
+            grpTroves.update(self._find_group_troves([grp]))
+        return grpTroves
+
+
     def _buildGroup(self, groupname=None, external=None):
         # pkgs have to be formated into txt for the recipe template
         # either it is a comma seperated string of names 
@@ -63,6 +103,8 @@ class Grouper(object):
 
         groupLabel = self.macros.get('groupTargetLabel')
 
+        groupLabel %= self.macros
+
         pkgsList = []
 
         packages = self.projects
@@ -70,30 +112,44 @@ class Grouper(object):
         if self.macros.get('includeExternal') or external:
             packages.update(self.external)
 
+        grpVersions = self._get_group_versions(groupName, groupLabel)
+
+        changed = False
+
         for name, pkgs in packages.items():
             # FIXME
             # Maybe overkill
-            if name.endswith('-test'):
-                continue
             for pkg in pkgs:
                 # FIXME
                 # Probably best idea
                 if pkg.name.endswith('-test'):
                     continue
                 if pkg.version:
+                    grpvers = grpVersions.get(pkg.name)
+                    if grpvers:
+                        grpver = max(grpvers)    
+                        if pkg.version != grpver.version:
+                            changed = True
+                    else:
+                        changed = True
+ 
                     pkgsList.append('%s=%s' % (pkg.name, str(pkg.version)))
                 else:
                     pkgsList.append('%s' % (pkg.name))
 
         logger.debug('Building group for %s' % groupName)
-        if self.test:
+
+        if self.test or not changed:
             logger.info('List of packages in group : %s' % str(pkgsList))
+            # TODO REMOVE DEBUG CODE
+            # DEBUG 
             template = templates.GroupTemplate( name=groupName,
                                             version=self.version,
                                             pkgs=pkgsList,
                                             label=groupLabel,
                                         )
             print template.getRecipe()
+            # END DEBUG
             return
 
         template = templates.GroupTemplate( name=groupName,

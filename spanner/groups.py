@@ -32,7 +32,7 @@ class GroupBuilder(object):
         self.version = template.version
         self.label = template.label
         self.recipe = template.getRecipe()
-        self.spec = template.getSpec()
+        self.spec = template.getTroveTuple()
         self._cclient = None
         self._cfg = None
 
@@ -91,7 +91,7 @@ class GroupBuilder(object):
         # END
 
         # Over configured... not necessary
-        allowFlavorChange = 'allow-flavor-change' # False
+        allowFlavorChange = 'allow-flavor-change' # Not False
         targetFile = 'to-file' # Not sure how to use this yet
         crossCompile = None # 'cross'
         unknownFlags = None # 'unknown-flags'
@@ -106,7 +106,7 @@ class GroupBuilder(object):
 
         # Hilarious over programing
         groupOptions = cook.GroupCookOptions(alwaysBumpCount=True,
-                                 errorOnFlavorChange=not allowFlavorChange,
+                                 errorOnFlavorChange=allowFlavorChange,
                                  shortenFlavors=cfg.shortenGroupFlavors) 
 
         try:

@@ -141,10 +141,16 @@ class Builder(object):
                 pkg.log = 'Built in %s' % pkg.bobplan
                 packages.setdefault(pkg.name, set()).add(pkg)
                 continue
-
+            # FIXME
+            # For now this is the version convention
+            # TODO 
+            # Add revision.txt  info to trove source metadata
+            version = None
+            if pkg.commit:
+                version = '%s.%s' % (pkg.branch, pkg.commit[:12])
             rc, cmd = self._build(  path=pkg.bobplan, 
                                     name=pkg.name,
-                                    version=pkg.commit, 
+                                    version=version, 
                                     tag=pkg.tag,
                             )
 

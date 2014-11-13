@@ -19,6 +19,7 @@ import logging
 import string
 
 from conary import trovetup
+from conary import versions
 
 logger = logging.getLogger(__name__)
 
@@ -91,28 +92,52 @@ class GroupTemplate(object):
         return self.spec
 
     def getTroveTuple(self):
-        return trovetup.TroveTuple(self.name, self.version, self.flavor)
+        version = self.label
+        if version:
+            if not version.startswith('/'):
+                version = '/'.join(['', version])
+            version = versions.VersionFromString(version)
+        return trovetup.TroveTuple((self.name, version, self.flavor))
 
     def getTroveSpec(self):
-        return trovetup.TroveSpec('%s=%s%s' % (self.name, 
-                                                self.version, self.flavor))
+        version = self.label
+        if version:
+            if not version.startswith('/'):
+                version = '/'.join(['', version])
+            version = versions.VersionFromString(version)
+        return trovetup.TroveSpec.fromString('%s=%s' % (self.name, 
+                                                version.asString()))
 
     def getTroveTuples(self):
         trovetupes = []
         if self.pkgs:
-            for name, versions in self.pkgs.iteritems():
-                for version, flavors in versions.iteritems():
-                    for flavor in flavors:
-                        trovetupes.append(trovetup.TroveTuple((name, version, flavor)))
+            for pkg in self.pkgs:
+                trvSpec = trovetup.TroveSpec.fromString(pkg)
+                _n = trvSpec.name
+                version = trvSpec.version
+                if not trvSpec.version.startswith('/'):
+                    version = '/'.join(['', trvSpec.version])
+                _v = versions.VersionFromString(version)
+                # TODO
+                # FIXME This needs to be an actual conary Flavor
+                _f = trvSpec.flavor
+                trovetupes.append(trovetup.TroveTuple((_n, _v, _f)))
         return trovetupes
 
     def getTroveSpecs(self):
         trovespecs = []
         if self.pkgs:
-            for name, versions in self.pkgs.iteritems():
-                for version, flavors in versions.iteritems():
-                    for flavor in flavors:
-                        trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (name, version, flavor)))
+            for pkg in self.pkgs:
+                trvSpec = trovetup.TroveSpec.fromString(pkg)
+                _n = trvSpec.name
+                version = trvSpec.version
+                if not trvSpec.version.startswith('/'):
+                    version = '/'.join(['', trvSpec.version])
+                version = versions.VersionFromString(version)
+                _v = version.asString()
+                # TODO 
+                # Add flavor support
+                trovespecs.append(trovetup.TroveSpec.fromString(('%s=%s' % (_n,_v))))
         return trovespecs
 
     @property
