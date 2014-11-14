@@ -8,7 +8,6 @@ from . import controller
 from . import factory
 from rev_file import RevisionFile
 
-
 logger = logging.getLogger(__name__)
 
 class PlanUtils(object):

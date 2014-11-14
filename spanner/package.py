@@ -1,7 +1,7 @@
 import logging
 
 from conary import trovetup
-
+from conary import versions
 
 logger = logging.getLogger(__name__)
 
@@ -31,24 +31,28 @@ class Package(object):
     def getTroveTuples(self):
         trovetupes = []
         if self.latest:
-            for name, versions in self.latest.iteritems():
-                for version, flavors in versions.iteritems():
-                    for flavor in flavors:
-                        trovetupes.append(trovetup.TroveTuple((name, version, flavor)))
+            for version, flavors in self.latest.iteritems():
+                for flavor in flavors:
+                    trovetupes.append(trovetup.TroveTuple((self.name, version, flavor)))
         else:
-            trovetupes.append(trovetup.TroveTuple((self.name, self.version, self.flavor)))
+            if self.version:
+                trovetupes.append(trovetup.TroveTuple((self.name, self.version, self.flavor)))
+            else:
+                if self.label:
+                    ver = '/'.join(['',self.label.asString()])
+                    version = versions.VersionFromString(ver)
+                    trovetupes.append(trovetup.TroveTuple((self.name, version, self.flavor)))
         return trovetupes
 
     def getTroveSpecs(self):
         trovespecs = []
         if self.latest:
-            for name, versions in self.latest.iteritems():
-                for version, flavors in versions.iteritems():
-                    for flavor in flavors:
-                        trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (name, version, flavor)))
+            for version, flavors in self.latest.iteritems():
+                for flavor in flavors:
+                    trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (self.name, version, flavor)))
         else:
             trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (
-                self.name, self.version, self.flavor)))
+                self.name, self.version, self.flavor or '' )))
         return trovespecs
 
     @property

@@ -140,16 +140,15 @@ class Grouper(object):
         logger.debug('Building group for %s' % groupName)
 
         if self.test or not changed:
+            logger.info('Skipping group build...')
             logger.info('List of packages in group : %s' % str(pkgsList))
-            # TODO REMOVE DEBUG CODE
-            # DEBUG 
-            template = templates.GroupTemplate( name=groupName,
-                                            version=self.version,
-                                            pkgs=pkgsList,
-                                            label=groupLabel,
-                                        )
-            print template.getRecipe()
-            # END DEBUG
+            if self.test:
+                template = templates.GroupTemplate( name=groupName,
+                                                version=self.version,
+                                                pkgs=pkgsList,
+                                                label=groupLabel,
+                                            )
+                print template.getRecipe()
             return
 
         template = templates.GroupTemplate( name=groupName,
@@ -158,8 +157,6 @@ class Grouper(object):
                                             label=groupLabel,
                                         )
         
-        import epdb;epdb.st()
-
         grp = groups.GroupBuilder(template)
 
         return grp.fricassee()      

@@ -132,38 +132,40 @@ class Builder(object):
         failed_packages = []
         seen_plans = []
         skipped = []
-        for pkg in tobuild:
-            # lets not build pkgs more than once
-            if pkg.bobplan not in seen_plans:
-                seen_plans.append(pkg.bobplan)
-            else:
-                skipped.append(pkg.name)
-                pkg.log = 'Built in %s' % pkg.bobplan
-                packages.setdefault(pkg.name, set()).add(pkg)
-                continue
-            # FIXME
-            # For now this is the version convention
-            # TODO 
-            # Add revision.txt  info to trove source metadata
-            version = None
-            if pkg.commit:
-                version = '%s.%s' % (pkg.branch, pkg.commit[:12])
-            rc, cmd = self._build(  path=pkg.bobplan, 
-                                    name=pkg.name,
-                                    version=version, 
-                                    tag=pkg.tag,
-                            )
+        for _n, pkgs in packages.iteritems():
+            for pkg in pkgs:
+                if pkg in tobuild:
+                    # lets not build pkgs more than once
+                    if pkg.bobplan not in seen_plans:
+                        seen_plans.append(pkg.bobplan)
+                    else:
+                        skipped.append(pkg.name)
+                        pkg.log = 'Built in %s' % pkg.bobplan
+                        packages.setdefault(pkg.name, set()).add(pkg)
+                        continue
+                    # FIXME
+                    # For now this is the version convention
+                    # TODO 
+                    # Add revision.txt  info to trove source metadata
+                    version = None
+                    if pkg.commit:
+                        version = '%s.%s' % (pkg.branch, pkg.commit[:12])
+                    rc, cmd = self._build(  path=pkg.bobplan, 
+                                            name=pkg.name,
+                                            version=version, 
+                                            tag=pkg.tag,
+                                    )
 
-            pkg.log = ('Failed: %s' if rc else 'Success: %s') % cmd
-            if rc:
-                failed_packages.append(pkg)
-            else:
-                pkg = self.updatePkgVersion(pkg)
-                built_packages.append(pkg)
-            packages.setdefault(pkg.name, set()).add(pkg)
+                    pkg.log = ('Failed: %s' if rc else 'Success: %s') % cmd
+                    if rc:
+                        failed_packages.append(pkg)
+                    else:
+                        pkg = self.updatePkgVersion(pkg)
+                        built_packages.append(pkg)
+                packages.setdefault(_n, set()).add(pkg)
         
         if self.test:
-            for name, pkgs in packages.items():
+            for _, pkgs in packages.items():
                 for pkg in pkgs:
                     logger.info('%s  :  %s\n' % (pkg.name, pkg.log))
             logger.info('List of plans built: %s' % seen_plans)

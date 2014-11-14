@@ -103,11 +103,13 @@ class Worker(object):
         log built, groupname
         '''
         for name, pkgs in packageset.items():
-            print name
+            print "Section: %s\n" % name
             for _n, pkg in pkgs.items():
-                print '\t%s' % _n
+                print '\tBob Plan:\n\t%s' % _n
                 for _p in pkg:
-                    print '\t\t%s\n\t\t%s' % (_p.name, _p.log)
+                    cpkgs = _p.getTroveSpecs()
+                    for cpkg in cpkgs:
+                        print '\t\t%s\n\t\t%s' % (cpkg.asString(), _p.log)
 
     def main(self):
         _start = time.time()
@@ -139,13 +141,13 @@ class Worker(object):
         self.group(packageset, plans=plans)
         end = time.time() - start
         print "End cooking group : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         start = time.time()
         print "Begin building products : %s" % start
         packageset = self.build(packageset, products=True)
         end = time.time() - start
         print "End building products : %s" % end
-        import epdb;epdb.st()
+        #import epdb;epdb.st()
         self.display(packageset)
         end = time.time() - _start
         print "Total time : %s" % end
