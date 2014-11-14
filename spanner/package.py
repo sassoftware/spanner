@@ -51,8 +51,14 @@ class Package(object):
                 for flavor in flavors:
                     trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (self.name, version, flavor)))
         else:
-            trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (
-                self.name, self.version, self.flavor or '' )))
+            if self.version:
+                trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (
+                            self.name, self.version, self.flavor or '' )))
+            else:
+                if self.label:
+                    version= '/'.join(['',self.label.asString()])
+                    trovespecs.append(trovetup.TroveSpec('%s=%s%s' % (
+                            self.name, version, self.flavor or '' )))
         return trovespecs
 
     @property
