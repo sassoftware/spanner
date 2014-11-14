@@ -134,7 +134,7 @@ class SpannerConfiguration(MainConfig):
     logFile                     = (cfg.CfgString, 'spanner.log')
     lockFile                    = (cfg.CfgString, 'spanner.lock')
     tmpDir                      = (cfg.CfgString, 'tmp')
-    bobExec                     = (cfg.CfgString, '/usr/bin/bob')
+    bobExec                     = (cfg.CfgString, '/usr/bin/bob-4.2')
     bobPlansUri                 = cfg.CfgString
     wmsBase                     = (cfg.CfgString, 'http://wheresmystuff.unx.sas.com')
     
