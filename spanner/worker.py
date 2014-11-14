@@ -105,11 +105,13 @@ class Worker(object):
         for name, pkgs in packageset.items():
             print "Section: %s\n" % name
             for _n, pkg in pkgs.items():
-                print '\tBob Plan:\n\t%s' % _n
+                print '\tBob Plan:\t%s' % _n.split('bob-plans')[-1]
                 for _p in pkg:
+                    print '\tTroves:'
                     cpkgs = _p.getTroveSpecs()
                     for cpkg in cpkgs:
-                        print '\t\t%s\n\t\t%s' % (cpkg.asString(), _p.log)
+                        print '\t\t\t%s' % cpkg.asString()
+                    print '\tLog:\n\t\t\t%s\n' %  _p.log
 
     def main(self):
         _start = time.time()
