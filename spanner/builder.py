@@ -141,6 +141,7 @@ class Builder(object):
                     else:
                         skipped.append(pkg.name)
                         pkg.log = 'Built in %s' % pkg.bobplan
+                        pkg = self.updatePkgVersion(pkg)
                         packages.setdefault(pkg.name, set()).add(pkg)
                         continue
                     # FIXME
