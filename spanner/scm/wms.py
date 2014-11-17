@@ -6,7 +6,7 @@ import os
 
 from conary.lib.util import copyfileobj
 
-from forester import scm
+from spanner import scm
 
 import logging
 
