@@ -17,7 +17,7 @@
 
 python_files =	$(wildcard *.py)
 
-SUBDIRS	= 
+SUBDIRS	= scm
 
 all: default-subdirs default-all
 

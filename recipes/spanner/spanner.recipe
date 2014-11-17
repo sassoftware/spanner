@@ -30,7 +30,7 @@ class Spanner(BuildPackageRecipe):
     def setup(r):
         r.macros.major = '.'.join(r.version.replace('_', '.').split('.')[:2]) 
         env = 'VERSION=%(version)s MAJOR=%(major)s'
-        r.addMercurialSnapshot()
+        r.addGitSnapshot()
         r.Make(env)
         r.MakeInstall(env)
 
