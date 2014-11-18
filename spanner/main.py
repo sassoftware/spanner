@@ -41,6 +41,7 @@ class SpannerMain(mainhandler.MainHandler):
         command.HelpCommand,
         command.ConfigCommand,
         command.BuilderCommand,
+        command.PlanCommand,
         ]
 
     setSysExcepthook = False

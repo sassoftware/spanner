@@ -3,6 +3,7 @@ import os
 import tempfile
 from conary.lib import util as conary_util
 
+import urllib
 from . import controller
 from rev_file import RevisionFile
 
@@ -45,6 +46,9 @@ class Fetcher(object):
             return os.path.abspath(uri) 
         return uri
 
+    @staticmethod
+    def _unquote(foo):
+        return urllib.unquote(foo).replace(':', '/')
 
     def initialize_controller(self, uri, branch=None):
         ctrltype = 'GIT'
@@ -56,7 +60,7 @@ class Fetcher(object):
         if self.is_local(uri):
             ctrltype = 'LOCAL'
         if base == self.cfg.wmsBase:
-            path = path.replace('api/repos/', '')
+            path = self._unquote(path.replace('api/repos/', ''))
             ctrltype = 'WMS'
             # If we find a tips or revision.txt we use that version 
             # Else we use the tip from rest api

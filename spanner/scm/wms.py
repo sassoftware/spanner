@@ -55,6 +55,9 @@ class WmsRepository(scm.ScmRepository):
     def _quote(foo):
         return urllib.quote(foo).replace('/', ':')
 
+    @staticmethod
+    def _unquote(foo):
+        return urllib.unquote(foo).replace(':', '/')
 
     def fetchlines(self, uri):
         req = requests.get(uri)
@@ -71,7 +74,7 @@ class WmsRepository(scm.ScmRepository):
     def _findTip(self, revisions):
         for result in revisions:
             path, branch, tip = result.split()
-            if path == self.pathq:
+            if path == self._unquote(self.pathq):
                 break
         assert len(tip) == 40
         return branch, tip
@@ -170,7 +173,7 @@ class WmsRepository(scm.ScmRepository):
         archive = self._archive()
         data = urllib.urlencode([('subtree', subtree)]) if subtree else None
         f = urllib2.urlopen(self.repos + '/archive/'
-                    + self.revision + '/' + archive, data=data)
+                    + urllib.quote(self.revision) + '/' + archive, data=data)
         tar = subprocess.Popen(['tar', '-x'], stdin=subprocess.PIPE,
                 cwd=workDir)
         while True:

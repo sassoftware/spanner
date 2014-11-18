@@ -121,3 +121,52 @@ class BuilderCommand(SpannerCommand):
                                     )
         spanner.main()
 
+class PlanCommand(SpannerCommand):
+    commands = ['plan']
+    paramHelp = '[uri] [plans]...'
+    help = "Build bob-plans from wms"
+    requireConfig = True
+
+
+    def addParameters(self, argDef):
+        SpannerCommand.addParameters(self, argDef)
+        argDef['branch'] = options.ONE_PARAM
+        argDef['cfgfile'] = options.ONE_PARAM
+        argDef['dry-run'] = options.NO_PARAM
+        argDef['group'] = options.NO_PARAM
+
+    def shouldRun(self):
+        if self.uri:
+            return True
+        logger.error('plan command requires a uri')
+        return False
+
+    def runCommand(self, cfg, argSet, params, **kw):
+        self.cfg = cfg
+        self.cfgfile = argSet.pop('cfgfile', None)
+        self.branch = argSet.pop('branch', None)
+        self.test = argSet.pop('dry-run', False)
+        self.group = argSet.pop('group', False)
+
+        if not len(params) >= 3:
+            return self.usage()
+
+        self.uri = params[2]
+        
+        force_builds = params[3:] or []
+
+        if not self.shouldRun():
+            logger.info('Builder will not run, exiting.')
+            sys.exit(2)
+
+
+        from spanner import planer
+        plans = planer.Worker(    uri=self.uri, 
+                                    force=force_builds, 
+                                    branch=self.branch, 
+                                    cfgfile=self.cfgfile, 
+                                    test=self.test,
+                                    )
+        results = plans.plan()
+        print "Plans built : %s" % results
+

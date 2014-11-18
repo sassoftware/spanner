@@ -11,11 +11,16 @@ sys.excepthook = util.genExcepthook()
 
 
 from spanner import worker
+from spanner import planer
+
 
 def main(uri, force=[], branch=None, cfgfile=None, test=False):
     wbee = worker.Worker(uri, force, branch=branch, cfgfile=cfgfile, test=test)
     wbee.main()
 
+def create(uri, force=[], branch=None, cfgfile=None, test=False):
+    wbee = planer.Worker(uri, force, branch=branch, cfgfile=cfgfile, test=test)
+    wbee.plan()
 
 if __name__ == '__main__':
     sys.excepthook = util.genExcepthook()
@@ -25,11 +30,15 @@ if __name__ == '__main__':
     test2 = 'ssh://git@scc.unx.sas.com/scc/build-tools?master'
     test3 = 'http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools'
     test4 = '../../../build-tools/bob-plans?4' 
-    
+    test5 = 'http://wheresmystuff.unx.sas.com/api/repos/gitgrid/VirtualApplications:Content:ams-vapp'
+
     force  = []
-    branch = 'master'
+    #branch = 'master'
+    branch = '5'
     cfgfile = None
     test = True
     
 
-    main(test3, force, branch, cfgfile, test)
+    #main(test3, force, branch, cfgfile, test)
+    create(test5,force, branch, cfgfile, test)
+
