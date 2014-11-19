@@ -115,7 +115,7 @@ class Planer(object):
 
 
     def _score(self, path):
-        return path.replace('.', '_')
+        return path.replace('.', '_').replace('-','_')
 
     def _dash(self, path):
         return path.replace('.', '-')
@@ -152,7 +152,8 @@ class Planer(object):
         for pkg, data in revdata.iteritems():
             name = self._score(data.get('name'))
             pkg =  'sasinside-' + self._dash(data.get('name'))
-            pathq = '/'.join(data.get('pathq').split(':')[:-1])
+            #pathq = '/'.join(data.get('pathq').split(':')[:-1])
+            pathq = data.get('path')
             filename = os.path.join(self.cfg.projectsDir, pkg + '.bob')
             template = BOBPLAN.format(pkgname=pkg,srctree=name,pathq=pathq)   
             self._writePlan(filename, template)
