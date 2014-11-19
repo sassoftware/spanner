@@ -185,7 +185,7 @@ includeConfigFile ../config/common.conf
 
 scm {srctree} wms {pathq} %(branch)s
 
-targetLabel %(target_label)s
+targetLabel %(ci_label)s
 
 target {pkgname}
 
@@ -202,6 +202,7 @@ includeConfigFile branch.conf
 
 shortenGroupFlavors True
 resolveTrovesOnly True
+showBuildLogs True
 
 macros target_host <my.space.com>
 
@@ -211,9 +212,14 @@ wmsBase http://wheresmystuff.unx.sas.com
 
 macros master_label %(target_host)s@sas:%(project_name)s-%(branch)s
 
+macros ci_short     %(project_name)s-ci
+
+macros ci_host      %(ci_short)s-ci.cny.sas.com
+
+macros ci_label     %(ci_host)s@sas:%(ci_short)s-%(branch)s-devel
+
 macros target_label %(master_label)s
 
-showBuildLogs True
 
 sourceLabel %(target_label)s
 
