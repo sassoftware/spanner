@@ -19,12 +19,15 @@ logger = logging.getLogger(__name__)
 
 class Worker(object):
 
-    def __init__(self, uri, force=[], branch=None, cfgfile=None, test=False):
+    def __init__(self, uri, force=[], branch=None, cfgfile=None, 
+                    group=False, products=False, test=False):
 
         self.uri = uri
         self.force = force
         self.cfgfile = cfgfile
         self.cfg = self.getDefaultConfig()
+        self.group_build = group
+        self.products_build = products
         self.test = test
         self.branch = branch
  
@@ -139,17 +142,19 @@ class Worker(object):
         print "End building projects : %s" % end
         #import epdb;epdb.st()
         start = time.time()
-        print "Begin cooking group : %s" % start
-        self.group(packageset, plans=plans)
-        end = time.time() - start
-        print "End cooking group : %s" % end
-        #import epdb;epdb.st()
-        start = time.time()
-        print "Begin building products : %s" % start
-        packageset = self.build(packageset, products=True)
-        end = time.time() - start
-        print "End building products : %s" % end
-        #import epdb;epdb.st()
+        if self.group_build:
+            print "Begin cooking group : %s" % start
+            self.group(packageset, plans=plans)
+            end = time.time() - start
+            print "End cooking group : %s" % end
+            #import epdb;epdb.st()
+        if self.products_build:
+            start = time.time()
+            print "Begin building products : %s" % start
+            packageset = self.build(packageset, products=True)
+            end = time.time() - start
+            print "End building products : %s" % end
+            #import epdb;epdb.st()
         self.display(packageset)
         end = time.time() - _start
         print "Total time : %s" % end

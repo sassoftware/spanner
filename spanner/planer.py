@@ -145,7 +145,7 @@ class Planer(object):
         project = os.path.basename(self.controller.path)
         self._writePlan(cfile, COMMON.format(project=project))
         gfile = os.path.join(self.cfg.commonDir, 'group.conf')
-        self._writePlan(gfile, COMMON.format(project=project))
+        self._writePlan(gfile, GROUP.format(project=project))
         pfile = os.path.join(self.cfg.commonDir, 'platform.conf')
         self._writePlan(pfile, PLATFORM)
         revdata = self.controller.ctrl.parseRevisionsFromUri()
@@ -190,7 +190,7 @@ targetLabel %(ci_label)s
 target {pkgname}
 
 [target:{pkgname}]
-version %(scm).%(version)s
+version %(version)s.%(scm)s
 sourceTree {srctree} recipes/{pkgname}
 flavor_set x86_64
 '''
@@ -256,15 +256,15 @@ macros rndplat_label    rndplat.cny.sas.com@sas:rndplat-%(branch)s
 
 resolveTrovesOnly True
 
-resolveTroves \
-    conary-testenv=testbits.rb.rpath.com@rpath:conary-common \
-    info-bin=conary.rpath.com@rpl:2 \
-    info-daemon=conary.rpath.com@rpl:2 \
-    info-rmake-chroot=conary.rpath.com@rpl:2 \
-    info-sys=conary.rpath.com@rpl:2 \
-    testutils=%(testutils_label)s \
-    mod_python=%(contrib_py_label)s \
-    python-webunit=%(contrib_py_label)s \
+resolveTroves \\
+    conary-testenv=testbits.rb.rpath.com@rpath:conary-common \\
+    info-bin=conary.rpath.com@rpl:2 \\
+    info-daemon=conary.rpath.com@rpl:2 \\
+    info-rmake-chroot=conary.rpath.com@rpl:2 \\
+    info-sys=conary.rpath.com@rpl:2 \\
+    testutils=%(testutils_label)s \\
+    mod_python=%(contrib_py_label)s \\
+    python-webunit=%(contrib_py_label)s \\
     python-conary=%(common_label)s
 
 resolveTroves group-rpath-packages=%(common_label)s
