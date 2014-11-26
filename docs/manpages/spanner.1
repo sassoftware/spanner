@@ -1,0 +1,114 @@
+.TH SPANNER "1" "Nov 2014" "spanner 0.2.3" "User Commands"
+.SH NAME
+spanner \- loop for bob
+.SH SYNOPSIS
+.B
+ spanner
+<command> <options>
+.SH DESCRIPTION
+.PP
+.B spanner 
+is a python program that leverages wms and git to enable continous integration builds. Spanner automates building packages from multiple git repos into conary packages as well as building conary groups after build runs.
+
+Spanner requires a WMS control repo with a directory of bob-plans. The bob-plans directory must contain specific directories. 
+.PP
+Project/
+    ├── control.yaml # Contains a list of git repos to add to your forest
+    ├── bob-plans
+       ├── config # Config files for bob.
+       ├── external # Packages built outside spanner on conary label
+       ├── products # Conary Groups
+       └── projects # Conary Pkgs built by spanner
+
+spanner also requires a wms url.
+
+    ie:   http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools
+.PP
+.B
+Common Commands
+.TP
+build
+Build all packages that have changed in the git forest.
+.TP
+plan
+Make a set of bob plan templates for a git forest.
+.TP
+config
+Show spanner config
+.PP
+
+.SH EXAMPLES
+.PP
+    spanner help <subcommand> 
+
+    spanner build http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools --branch master --group --debug-logging
+
+.SH OPTIONS
+
+.TP
+.B \-\-branch=BRANCH
+Specifies the branch to build. Defaults to master if not supplied
+ie: \-\-branch master
+
+.TP
+.B \-\-cfgfile=CFGFILE
+Specifies a specific spannerrc. Defaults to none using internal hard coded config. Not required in most instances.
+ie: \-\-cfgfile ~/spannerrc
+.TP
+.B \-\-debug\-logging
+Toggles debug log level on. Defaults to off (quiet) if not supplied. Provides usefull output when run in jenkins.
+
+.TP
+.B \-\-dry\-run
+Toggles test mode on. Defaults to off. Used on initial runs to test outputs. usually paired with \-\-debug\-logging
+
+.TP
+.B \-\-group
+Toggles group build on. Defaults to off. When on spanner will create a group at the end of the build run. The contents of which include all packages in projects and oprionally the packages specified in external directories. Uses a special config file 
+.B group.conf
+in the config directory. 
+
+SEE ALSO 
+
+\fIspanner-group\fP(1)
+
+.TP
+.B \-\-products
+Toggles products build on. Defaults to off. Builds the plans in the products directory. Used for packages or group builds that require pkgs in projects to be built before building.
+
+
+.TP
+.B \-\-quiet
+Toggles silent mode. Defaults to off. Deprecated.
+
+
+.SH SEEALSO
+
+.PD 0
+.TP
+\fIspanner-build\fP(1)
+.TP
+\fIspanner-plan\fP(1)
+.TP
+\fIspanner-config\fP(1)
+.TP
+\fIspanner-group\fP(1)
+.PD
+
+.SH BUGS
+ file issues or bugs
+.UR
+https://opensource.sas.com/its
+ 
+.SH AUTHORS
+.B
+ spanner
+was written by SAS
+.UR
+http://www.sas.com/
+.
+.SH COPYRIGHT
+ Copyright (c)
+.B
+SAS Institute Inc.
+ 

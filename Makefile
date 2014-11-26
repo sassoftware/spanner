@@ -26,6 +26,8 @@ export CFGDEVEL=rpathrc
 
 SUBDIRS=spanner commands
 
+MANPAGES=$(notdir $(filter %.1,$(wildcard docs/manpages/*.1)))
+
 extra_files = \
 	Make.rules 		\
 	Makefile		\
@@ -44,6 +46,13 @@ install: install-subdirs
 clean: clean-subdirs default-clean
 
 doc: html
+
+man:
+	mkdir -p $(DESTDIR)$(mandir)/man1
+	for M in $(MANPAGES); do \
+		install -m 0644 docs/manpages/$$M $(DESTDIR)$(mandir)/man1/; \
+		gzip $(DESTDIR)$(mandir)/man1/$$M; \
+	done
 
 dist:
 	if ! grep "^Changes in $(VERSION)" NEWS > /dev/null 2>&1; then \
