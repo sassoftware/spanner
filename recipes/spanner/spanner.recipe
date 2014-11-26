@@ -31,6 +31,6 @@ class Spanner(BuildPackageRecipe):
         r.macros.major = '.'.join(r.version.replace('_', '.').split('.')[:2]) 
         env = 'VERSION=%(version)s MAJOR=%(major)s'
         r.addGitSnapshot()
-        r.Make(env)a
+        r.Make(env)
         r.Make('man DESTDIR=%(destdir)s')
         r.MakeInstall(env)
