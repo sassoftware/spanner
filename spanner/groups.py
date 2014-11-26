@@ -109,6 +109,8 @@ class GroupBuilder(object):
                                  errorOnFlavorChange=allowFlavorChange,
                                  shortenFlavors=cfg.shortenGroupFlavors) 
 
+        import epdb;epdb.st()
+
         try:
             cook.cookCommand(cfg, specs, prep=prep, macros=macros, resume=resume,
                          allowUnknownFlags=unknownFlags, ignoreDeps=ignoreDeps,
