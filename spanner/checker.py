@@ -128,6 +128,7 @@ class Checker(PlanUtils):
             controllers = self._get_controllers(plan, branch)   
             # Create initial package
             bobsect = plan.getSection('target:%s'%target)
+            scm = bobsect.scm or bobsect.sourceTree.split()[0]
             pkg = package.Package(  name=target,
                             target=target,
                             change=False,
@@ -136,7 +137,7 @@ class Checker(PlanUtils):
                             label=label,
                             controllers=controllers,
                             bobplan=path,
-                            scm=bobsect.scm,
+                            scm=scm,
                         )
             pkgs.add(pkg)
         return pkgs
