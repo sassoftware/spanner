@@ -125,6 +125,92 @@ class BuilderCommand(SpannerCommand):
                                     )
         spanner.main()
 
+
+class GroupBuilderCommand(SpannerCommand):
+    commands = ['buildgroups']
+    paramHelp = '[uri]'
+    help = "Build a group from a forest"
+    requireConfig = True
+
+    def addParameters(self, argDef):
+        SpannerCommand.addParameters(self, argDef)
+        argDef['branch'] = options.ONE_PARAM
+        argDef['cfgfile'] = options.ONE_PARAM
+        argDef['dry-run'] = options.NO_PARAM
+
+    def shouldRun(self):
+        if self.uri:
+            return True
+        logger.error('buildgroups command requires a uri')
+        return False
+
+    def runCommand(self, cfg, argSet, params, **kw):
+        self.cfg = cfg
+        self.cfgfile = argSet.pop('cfgfile', None)
+        self.branch = argSet.pop('branch', None)
+        self.test = argSet.pop('dry-run', False)
+
+        if not len(params) >= 3:
+            return self.usage()
+
+        self.uri = params[2]
+
+        if not self.shouldRun():
+            logger.info('Builder will not run, exiting.')
+            sys.exit(2)
+
+
+        spanner = worker.Worker(    uri=self.uri, 
+                                    branch=self.branch, 
+                                    cfgfile=self.cfgfile,
+                                    test=self.test,
+                                    )
+
+        spanner.buildGroup()
+
+class ProductBuilderCommand(SpannerCommand):
+    commands = ['buildproducts']
+    paramHelp = '[uri]'
+    help = "Build a products from a forest bob-plans"
+    requireConfig = True
+
+    def addParameters(self, argDef):
+        SpannerCommand.addParameters(self, argDef)
+        argDef['branch'] = options.ONE_PARAM
+        argDef['cfgfile'] = options.ONE_PARAM
+        argDef['dry-run'] = options.NO_PARAM
+
+    def shouldRun(self):
+        if self.uri:
+            return True
+        logger.error('buildproducts command requires a uri')
+        return False
+
+    def runCommand(self, cfg, argSet, params, **kw):
+        self.cfg = cfg
+        self.cfgfile = argSet.pop('cfgfile', None)
+        self.branch = argSet.pop('branch', None)
+        self.test = argSet.pop('dry-run', False)
+
+        if not len(params) >= 3:
+            return self.usage()
+
+        self.uri = params[2]
+
+        if not self.shouldRun():
+            logger.info('Builder will not run, exiting.')
+            sys.exit(2)
+
+        spanner = worker.Worker(    uri=self.uri, 
+                                    branch=self.branch, 
+                                    cfgfile=self.cfgfile,
+                                    test=self.test,
+                                    )
+
+        spanner.buildProducts()
+
+
+
 class PlanCommand(SpannerCommand):
     commands = ['plan']
     paramHelp = '[uri] [plans]...'

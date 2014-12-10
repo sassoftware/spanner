@@ -116,11 +116,12 @@ class Worker(object):
                         print '\t\t\t%s' % cpkg.asString()
                     print '\tLog:\n\t\t\t%s\n' %  _p.log
 
-    def main(self):
-        _start = time.time()
-        print "Begin gathering planpaths : %s" % _start
+
+    def getPackageSet(self):
+        start = time.time()
+        print "Begin gathering planpaths : %s" % start
         planpaths = self.fetch()
-        end = time.time() - _start
+        end = time.time() - start
         print "End gathering planpaths : %s" % end
         #import epdb;epdb.st()
         start = time.time()
@@ -135,6 +136,30 @@ class Worker(object):
         end = time.time() - start
         print "End checking plans : %s" % end
         #import epdb;epdb.st()
+        return packageset, plans
+
+    def buildGroup(self, packageset=None, plans=None):
+        if not packageset or not plans:
+            packageset, plans = self.getPackageSet()
+        start = time.time()
+        print "Begin cooking group : %s" % start
+        self.group(packageset, plans=plans)
+        end = time.time() - start
+        print "End cooking group : %s" % end
+
+    def buildProducts(self, packageset=None):
+        if not packageset:
+            packageset, _ = self.getPackageSet()
+        start = time.time()
+        print "Begin building products : %s" % start
+        packageset = self.build(packageset, products=True)
+        end = time.time() - start
+        print "End building products : %s" % end
+        return packageset
+         
+    def main(self):
+        _start = time.time()
+        packageset, plans = self.getPackageSet()
         start = time.time()
         print "Begin building projects : %s" % start
         packageset = self.build(packageset)
@@ -143,18 +168,11 @@ class Worker(object):
         #import epdb;epdb.st()
         start = time.time()
         if self.group_build:
-            print "Begin cooking group : %s" % start
-            self.group(packageset, plans=plans)
-            end = time.time() - start
-            print "End cooking group : %s" % end
+            self.buildGroup(packageset, plans)
             #import epdb;epdb.st()
         if self.products_build:
-            start = time.time()
-            print "Begin building products : %s" % start
-            packageset = self.build(packageset, products=True)
-            end = time.time() - start
-            print "End building products : %s" % end
-            #import epdb;epdb.st()
+            packageset = self.buildProducts(packageset)
+           #import epdb;epdb.st()
         self.display(packageset)
         end = time.time() - _start
         print "Total time : %s" % end

@@ -41,6 +41,8 @@ class SpannerMain(mainhandler.MainHandler):
         command.HelpCommand,
         command.ConfigCommand,
         command.BuilderCommand,
+        command.GroupBuilderCommand,
+        command.ProductBuilderCommand,
         command.PlanCommand,
         ]
 
