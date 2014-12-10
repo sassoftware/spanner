@@ -32,8 +32,6 @@ class Grouper(object):
         self.products = self.packageset[self._cfg.productsDir]
         self.external = self.packageset[self._cfg.externalDir]
 
-
-
     def getGrpConfig(self, plans):
         plan = config.BobConfig()
         if plans:
@@ -59,7 +57,8 @@ class Grouper(object):
         # Try and find conary versions 
         cc = factory.ConaryClientFactory().getClient()
         ss = cc.getSearchSource(flavor=0)
-        trvspec = parseTroveSpec(trvspec)
+        if isinstance(trvspec, str):
+            trvspec = parseTroveSpec(trvspec)
         matches = ss.findTroves([trvspec], bestFlavor=False, allowMissing=True)
         # Parse trvspec and fetch that trove
         if matches:
@@ -81,29 +80,29 @@ class Grouper(object):
                 interestingTroves.setdefault(troveTup.name, []).append(troveTup)
         return interestingTroves
 
-    def _get_group_versions(self, group, label):
+    def _get_group_versions(self, trvspec=None):
         grpTroves = {}
-        trvspec = '%s=%s' % (group, label)
+        if not trvspec:    
+            trvspec = self._default_grp_trvspec()
         grp = self._get_conary_pkg(trvspec)
         if grp:
             grpTroves.update(self._find_group_troves([grp]))
         return grpTroves
 
+    def _default_grp_trvspec(self):
+        group = self.macros.get('groupName')
+        label = self.macros.get('groupTargetLabel')
+        label %= self.macros
+        return parseTroveSpec('%s=%s' % (group, label))
 
-    def _buildGroup(self, groupname=None, external=None):
+    def _latest_default_grp(self):
+        return self._get_conary_pkg(self._default_grp_trvspec())
+
+    def _buildGroup(self, trvspec=None, external=False):
         # pkgs have to be formated into txt for the recipe template
         # either it is a comma seperated string of names 
         # or a string of names=version
         # TODO add code to handle no version
-    
-        groupName = self.macros.get('groupName')
-
-        if groupname and groupname.startswith('group-'):
-            groupName = groupname
-
-        groupLabel = self.macros.get('groupTargetLabel')
-
-        groupLabel %= self.macros
 
         pkgsList = []
 
@@ -112,7 +111,13 @@ class Grouper(object):
         if self.macros.get('includeExternal') or external:
             packages.update(self.external)
 
-        grpVersions = self._get_group_versions(groupName, groupLabel)
+        if not trvspec:
+            trvspec = self._default_grp_trvspec()
+            label = trvspec.version
+            if '/' in label:
+                label = label.split('/')[-2]
+
+        grpVersions = self._get_group_versions(trvspec)
 
         changed = False
 
@@ -137,33 +142,36 @@ class Grouper(object):
                 else:
                     pkgsList.append('%s' % (pkg.name))
 
-        logger.debug('Building group for %s' % groupName)
+        template = templates.GroupTemplate( name=trvspec.name,
+                                            version=self.version,
+                                            pkgs=pkgsList,
+                                            label=label,
+                                        )
 
         if self.test or not changed:
             logger.info('Skipping group build...')
             logger.info('List of packages in group : %s' % str(pkgsList))
             if self.test:
-                template = templates.GroupTemplate( name=groupName,
-                                                version=self.version,
-                                                pkgs=pkgsList,
-                                                label=groupLabel,
-                                            )
                 print template.getRecipe()
             return
 
-        template = templates.GroupTemplate( name=groupName,
-                                            version=self.version,
-                                            pkgs=pkgsList,
-                                            label=groupLabel,
-                                        )
+        logger.debug('Building group for %s' % trvspec.name)
         
         grp = groups.GroupBuilder(template)
 
         return grp.fricassee()      
+        
 
     def group(self):
         # TODO Finish buildGroup
-        return self._buildGroup()
+        current = self._latest_default_grp()
+        if current:
+            logger.debug('Current Group Version : %s' % current.asString())
+        self._buildGroup()
+        latest = self._latest_default_grp()
+        if latest != current:
+            logger.info('Updated Group Version : %s' % latest.asString())
+        return 
 
     def main(self):
         # TODO Finish buildGroup
