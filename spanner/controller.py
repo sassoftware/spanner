@@ -17,6 +17,26 @@ from spanner.scm import local
 logger = logging.getLogger(__name__)
 
 class Controller(object):
+    '''
+    B{Controller} Methods for interacting with a control repo
+    
+    Types include: 
+
+        - WMS
+        - GIT
+        - HG    -- Not Implemented
+        - LOCAL -- Not Implemented
+
+    @param base: base uri for repo
+    @type base: string
+    @param path: path to the repo 
+    @type path: string
+    @keyword branch: branch name (defaults to master)
+    @type branch: string 
+    @keyword rev: commit revision (defaults to None)
+    @type rev: string
+    '''
+
     _registry = {}
     
     @classmethod

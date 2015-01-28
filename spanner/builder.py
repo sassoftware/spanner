@@ -1,19 +1,42 @@
+#
+# Copyright (c) SAS Institute Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+'''
+Build actions for packages
+'''
+
 import logging
 import os
 import subprocess
-import tempfile
-import time
-from collections import defaultdict
 
 from factory import ConaryClientFactory as _ccf
 from . import config
-from . import errors
 
 
 logger = logging.getLogger(__name__)
 
 
 class Builder(object):
+    '''
+    B{Builder}
+    Build conary packages from the package objects
+    @param packageset: Set of package objects to build
+    @keyword cfg: cfg object
+    @keyword test: toggle test run
+    '''
 
     def __init__(self, packageset, cfg=None, test=False):
         self.packageset = packageset
@@ -39,33 +62,37 @@ class Builder(object):
         self._cclient = None
 
     def getDefaultConfig(self):
+        '''get default cfg object for builder'''
         logger.info('Loading default cfg')
         self._cfg = config.SpannerConfiguration()
         self._cfg.read()
 
 
-    def _getClient(self, force=False):
+    def _get_client(self, force=False):
+        '''return a fresh conary client'''
         if self._cclient is None or force:
             self._cclient = _ccf().getClient(
                 model=False)
         return self._cclient
 
-    conaryClient = property(_getClient)
+    conaryClient = property(_get_client)
 
 
     def _build(self, path, name=None, version=None, tag=None):
         '''
+        Wrapper for bob the builder
+
         @param path: A string representing the path 
                     to the bob plan to be executed
-        @type path: String
+        @type path: C{string}
         @param name: the name of package to be built. 
                 required for setting version or tag (optional)
-        @type name: String
+        @type name: C{string}
         @param version: string representation of the commit 
                     from git repo (optional)
-        @type version: String
+        @type version: C{string}
         @param tag: string representation of tag from git repo (optional)
-        @type: String
+        @type: C{string}
         '''
         cmd = [self.bobexec, path]
 
@@ -89,13 +116,18 @@ class Builder(object):
         if self.test:
             return 0, ' '.join(cmd)
 
-        p = subprocess.Popen(cmd)
-        p.communicate()
-        return p.returncode, ' '.join(cmd)
+        proc = subprocess.Popen(cmd)
+        proc.communicate()
+        return proc.returncode, ' '.join(cmd)
 
 
     def updatePkgVersion(self, pkg):
-        # Try and find conary versions
+        '''
+        B{updatePkgVersion}
+        Tries to find conary version of a package
+        @param pkg: package object
+        @return: updated package object
+        '''
         revision = None
         version = None
         query = { pkg.target: { pkg.label: None, },}
@@ -116,23 +148,40 @@ class Builder(object):
                             })
         return pkg
 
-    def handler(self, pkgs):
+    def handler(self, packages):
+        '''
+        B{Handler} 
+        checks to see if a package object 
+        has change flag set true
+        @param packages: set of package objects to be checked
+        @return: a set of package objects to be built
+        @rtype: C{set}
+        '''
         tobuild = set([])
-        for name, pkg in pkgs.iteritems():
-            for _p in pkg:
-                if _p.change:
-                    logger.info('%s has changed adding to build set' % _p.name)
-                    tobuild.add(_p)
+        for _, pkgs in packages.iteritems():
+            for pkg in pkgs:
+                if pkg.change:
+                    logger.info('%s has changed adding to build set' % pkg.name)
+                    tobuild.add(pkg)
         return tobuild
 
 
     def build(self, packages):
+        '''
+        B{Build}
+ 
+        checks a set of package objects using handler
+        then passes package objects to _build to be built
+        @param packages: set of package objects
+        @return: updated set of package objects
+        @rtype: C{set}
+        '''
         tobuild = self.handler(packages)
         built_packages = []
         failed_packages = []
         seen_plans = []
         skipped = []
-        for _n, pkgs in packages.iteritems():
+        for name, pkgs in packages.iteritems():
             for pkg in pkgs:
                 if pkg in tobuild:
                     # lets not build pkgs more than once
@@ -163,7 +212,7 @@ class Builder(object):
                     else:
                         pkg = self.updatePkgVersion(pkg)
                         built_packages.append(pkg)
-                packages.setdefault(_n, set()).add(pkg)
+                packages.setdefault(name, set()).add(pkg)
         
         if self.test:
             for _, pkgs in packages.items():
@@ -182,17 +231,24 @@ class Builder(object):
         return packages
 
     def buildProjects(self):
+        '''
+        Build Projects from the packageset
+        '''
         # TODO Finish buildGroup
         projects = self.build(self.projects)
         self.packageset[self._cfg.projectsDir].update(projects)
         return self.packageset
 
     def buildProducts(self):
+        '''
+        Build Products from the packageset
+        '''
         products = self.build(self.products)
         self.packageset[self._cfg.productsDir].update(products)
         return self.packageset
 
     def main(self):
+        '''Main routine for C{Builder}'''
         return self.buildProjects()
 
 if __name__ == '__main__':

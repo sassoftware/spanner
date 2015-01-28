@@ -1,3 +1,22 @@
+#
+# Copyright (c) SAS Institute Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+'''
+Actions for building groups
+'''
+
 import logging
 import os
 import time
@@ -13,6 +32,16 @@ from conary.conaryclient.cmdline import parseTroveSpec
 logger = logging.getLogger(__name__)
 
 class Grouper(object):
+    '''
+    B{Grouper}
+    Build groups from set of packages
+    @param packageset: dict of { sections : packages }
+    @type packageset: C{string}
+    @keyword cfg: alternate cfg object
+    @keyword test: Boolean to toggle debuging
+    @keyword plans: Plan object from C{Worker} read()
+    '''
+
 
     def __init__(self, packageset, cfg=None, test=False, plans=None):
         self.packageset = packageset
@@ -32,7 +61,19 @@ class Grouper(object):
         self.products = self.packageset[self._cfg.productsDir]
         self.external = self.packageset[self._cfg.externalDir]
 
+    def getDefaultConfig(self):
+        '''get default cfg object for grouper'''
+        logger.info('Loading default cfg')
+        self._cfg = config.SpannerConfiguration()
+        self._cfg.read()
+
     def getGrpConfig(self, plans):
+        '''
+        B{getGrpConfig}
+        iter plan objects and find match for group config file
+        @param plans: set of plans from C{Worker} read()
+        @return: plan object
+        '''
         plan = config.BobConfig()
         if plans:
             common = plans.get(self._cfg.commonDir)
@@ -46,13 +87,15 @@ class Grouper(object):
                 from conary.build.macros import Macros
                 macros = {  'groupName'       : 'group-foo-packages',
                             'includeExternal' : 'False',
-                            'groupTargetLabel' : self._cfg.targetLabel or 'foo@foo:bar',
+                            'groupTargetLabel' : self._cfg.targetLabel or 'foo@f:bar',
                         }
                 #macros.update(self._cfg.macros)
                 plan._macros = Macros(macros)
         return plan
 
-    def _get_conary_pkg(self, trvspec):
+    @classmethod
+    def _get_conary_pkg(cls, trvspec):
+        '''Find latest conary version of a trove spec'''
         latest = None
         # Try and find conary versions 
         cc = factory.ConaryClientFactory().getClient()
@@ -65,7 +108,15 @@ class Grouper(object):
             latest = max(matches[trvspec])
         return latest
 
-    def _find_group_troves(self, topLevelGroups):
+    @classmethod
+    def _find_group_troves(cls, topLevelGroups):
+        '''
+        Find all the troves in a conary top level group
+        @param topLevelGroups: list of top level groups 
+        @type topLevelGroups: C{string}
+        @return: dict of troves
+        @rtype: dict
+        '''
         interestingTroves = {}
         cc = factory.ConaryClientFactory().getClient()
         ss = cc.getSearchSource(flavor=0)
@@ -81,6 +132,11 @@ class Grouper(object):
         return interestingTroves
 
     def _get_group_versions(self, trvspec=None):
+        '''
+        Find version of a conary group
+        @keyword trvspec: Set a specific group to look up
+        @return: dict of { name : troveTup }
+        '''
         grpTroves = {}
         if not trvspec:    
             trvspec = self._default_grp_trvspec()
@@ -90,19 +146,23 @@ class Grouper(object):
         return grpTroves
 
     def _default_grp_trvspec(self):
+        '''Return default group trovespec fromg cfg'''
         group = self.macros.get('groupName')
         label = self.macros.get('groupTargetLabel')
         label %= self.macros
         return parseTroveSpec('%s=%s' % (group, label))
 
     def _latest_default_grp(self):
+        '''Return latest group trovespec from cfg'''
         return self._get_conary_pkg(self._default_grp_trvspec())
 
     def _buildGroup(self, trvspec=None, external=False):
-        # pkgs have to be formated into txt for the recipe template
-        # either it is a comma seperated string of names 
-        # or a string of names=version
-        # TODO add code to handle no version
+        '''
+        pkgs have to be formated into txt for the recipe template
+        either it is a comma seperated string of names 
+        or a string of names=version
+        @todo: add code to handle no version
+        '''
 
         pkgsList = []
 
@@ -163,6 +223,7 @@ class Grouper(object):
         
 
     def group(self):
+        '''Build a conary group from a packageset''' 
         # TODO Finish buildGroup
         current = self._latest_default_grp()
         if current:
@@ -174,6 +235,7 @@ class Grouper(object):
         return 
 
     def main(self):
+        '''Main function for Grouper'''
         # TODO Finish buildGroup
         return self._buildGroup()
 

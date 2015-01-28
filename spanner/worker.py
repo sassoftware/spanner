@@ -1,13 +1,29 @@
+#
+# Copyright (c) SAS Institute Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+'''
+Main thread for spanner, provides high level actions for building 
+conary packages from git repos
+'''
+
 import logging
 import os
-import subprocess
-import tempfile
 import time
-from collections import defaultdict
 
 
 from . import config
-from . import errors
 from . import fetcher
 from . import reader
 from . import checker
@@ -18,12 +34,22 @@ logger = logging.getLogger(__name__)
 
 
 class Worker(object):
+    '''
+    B{Worker}
+    Main worker thread for spanner
+    @param uri: uri locator for control repo
+    @type uri: C{string}
+    @keyword force: List of packages to build no matter what
+    @keyword branch: branch of the repo
+    @keyword cfgfile: use alternate cfg file
+    @keyword test: Boolean to toggle debug mode (no builds)
+    '''
 
-    def __init__(self, uri, force=[], branch=None, cfgfile=None, 
+    def __init__(self, uri, force=None, branch=None, cfgfile=None, 
                     group=False, products=False, test=False):
 
         self.uri = uri
-        self.force = force
+        self.force = force or []
         self.cfgfile = cfgfile
         self.cfg = self.getDefaultConfig()
         self.group_build = group
@@ -41,6 +67,7 @@ class Worker(object):
         assert os.path.exists(self.tmpdir)
 
     def getDefaultConfig(self, cfgFile=None):
+        '''return default config for spanner'''
         logger.info('Loading default cfg')
         if not cfgFile:
             cfgFile = self.cfgfile
@@ -52,16 +79,16 @@ class Worker(object):
         check out plans from repo
         return destination of plans
         '''
-        fetch_plans = fetcher.Fetcher(self.uri, self.cfg, self.branch)
-        return fetch_plans.fetch()
+        fetchPlans = fetcher.Fetcher(self.uri, self.cfg, self.branch)
+        return fetchPlans.fetch()
 
     def read(self, path):
         '''
         pass in path to plans
         return set of package objects
         '''
-        read_plans = reader.Reader(path, self.cfg)
-        return read_plans.read()
+        readPlans = reader.Reader(path, self.cfg)
+        return readPlans.read()
 
     def check(self, plans):
         '''
@@ -100,45 +127,45 @@ class Worker(object):
         g = grouper.Grouper(packageset, self.cfg, self.test, plans)
         return g.group()
 
-    def display(self, packageset):
+    @classmethod 
+    def display(cls, packageset):
         '''
         pass in set of package objects
         log built, groupname
         '''
-        for name, pkgs in packageset.items():
-            print "Section: %s\n" % name
-            for _n, pkg in pkgs.items():
-                print '\tBob Plan:\t%s' % _n.split('bob-plans')[-1]
-                for _p in pkg:
+        for secName, secPkgs in packageset.items():
+            print "Section: %s\n" % secName
+            for name, pkgs in secPkgs.items():
+                print '\tBob Plan:\t%s' % name.split('bob-plans')[-1]
+                for pkg in pkgs:
                     print '\tTroves:'
-                    cpkgs = _p.getTroveSpecs()
+                    cpkgs = pkg.getTroveSpecs()
                     for cpkg in cpkgs:
                         print '\t\t\t%s' % cpkg.asString()
-                    print '\tLog:\n\t\t\t%s\n' %  _p.log
+                    print '\tLog:\n\t\t\t%s\n' %  pkg.log
 
 
     def getPackageSet(self):
+        '''return packageset and plans'''
         start = time.time()
         print "Begin gathering planpaths : %s" % start
         planpaths = self.fetch()
         end = time.time() - start
         print "End gathering planpaths : %s" % end
-        #import epdb;epdb.st()
         start = time.time()
         print "Begin reading plans : %s" % start
         plans = self.read(planpaths)
         end = time.time() - start
         print "End reading plans : %s" % end
-        #import epdb;epdb.st()
         start = time.time()
         print "Begin checking plans : %s" % start
         packageset = self.check(plans)
         end = time.time() - start
         print "End checking plans : %s" % end
-        #import epdb;epdb.st()
         return packageset, plans
 
     def buildGroup(self, packageset=None, plans=None):
+        '''build groups from packageset or control'''
         if not packageset or not plans:
             packageset, plans = self.getPackageSet()
         start = time.time()
@@ -148,8 +175,9 @@ class Worker(object):
         print "End cooking group : %s" % end
 
     def buildProducts(self, packageset=None):
+        '''build products from packageset or control'''
         if not packageset:
-            packageset, _ = self.getPackageSet()
+            packageset, dummy = self.getPackageSet()
         start = time.time()
         print "Begin building products : %s" % start
         packageset = self.build(packageset, products=True)
@@ -158,23 +186,21 @@ class Worker(object):
         return packageset
          
     def main(self):
-        _start = time.time()
+        '''Main function for Worker'''
+        startStart = time.time()
         packageset, plans = self.getPackageSet()
         start = time.time()
         print "Begin building projects : %s" % start
         packageset = self.build(packageset)
         end = time.time() - start
         print "End building projects : %s" % end
-        #import epdb;epdb.st()
         start = time.time()
         if self.group_build:
             self.buildGroup(packageset, plans)
-            #import epdb;epdb.st()
         if self.products_build:
             packageset = self.buildProducts(packageset)
-           #import epdb;epdb.st()
         self.display(packageset)
-        end = time.time() - _start
+        end = time.time() - startStart
         print "Total time : %s" % end
 
 if __name__ == '__main__':

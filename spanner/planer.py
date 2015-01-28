@@ -1,3 +1,22 @@
+#
+# Copyright (c) SAS Institute Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+'''
+Actions for building bob-plans from WMS control.yaml
+'''
+
 import logging
 import os
 import tempfile
@@ -11,16 +30,26 @@ from rev_file import RevisionFile
 logger = logging.getLogger(__name__)
 
 class Worker(object):
+    '''
+    B{Worker}
+    Main worker thread for spanner
+    @param uri: uri locator for control repo
+    @type uri: C{string}
+    @keyword force: List of packages to build no matter what 
+    @keyword branch: branch of the repo
+    @keyword cfgfile: use alternate cfg file
+    @keyword test: Boolean to toggle debug mode (no builds)
+    '''
 
-    def __init__(self, uri, force=[], branch=None, cfgfile=None, test=False):
+    def __init__(self, uri, force=None, branch=None, cfgfile=None, test=False):
 
         self.uri = uri
-        self.force = force
+        self.force = force or []
         self.cfgfile = cfgfile
-        self.cfg = self.getDefaultConfig()
         self.test = test
         self.branch = branch
 
+        self.cfg = self.getDefaultConfig()
         if self.cfg.testOnly:
             logger.warn('testOnly set in config file ignoring commandline')
             self.test = self.cfg.testOnly
@@ -31,30 +60,28 @@ class Worker(object):
         assert os.path.exists(self.tmpdir)
 
     def getDefaultConfig(self, cfgFile=None):
+        '''Get default config for spanner'''
         logger.info('Loading default cfg')
         if not cfgFile:
             cfgFile = self.cfgfile
         return config.SpannerConfiguration(config=cfgFile)
 
     def plan(self):
+        '''Main call to create plans from repo'''
         plans = Planer(self.uri, self.cfg, self.branch)
         return plans.create()
 
 class Planer(object):
+    '''
+    B{Planer} Create plans for a control repo, 
+    @param uri: uri locator for control repo
+    @type uri: C{string}
+    @keyword force: List of packages to build no matter what 
+    @keyword branch: branch of the repo
+    '''
 
     def __init__(self, uri, cfg, branch=None):
-        '''
-        B{Fetcher} Creates a snapshot of a control repo, 
-                    checks out plans, returns path to plans
 
-            - path directory to snapshot the plans to
-            - controller scm interaction supports  wms, git, local
-
-        @param path: path to snapshot destination
-        @type path: string
-        @param controller: wms, git, or local 
-        @type controller: controller object
-        '''
         self.uri = uri
         self.cfg = cfg
         self.branch = branch
@@ -66,22 +93,38 @@ class Planer(object):
         if self.is_local(uri):
             self.subtree = None
         self.fetched = False
-        self.rf = RevisionFile()
+        self.revision_file = RevisionFile()
         self.controller = self.initialize_controller(uri, self.branch)
 
-    def is_local(self, uri):
+    @classmethod
+    def is_local(cls, uri):
+        '''detect if uri is local'''
         return uri.startswith('/') or uri.startswith('file:')
 
-    def normalize_path(self, uri):
+    @classmethod
+    def normalize_path(cls, uri):
+        '''return absolute path of a uri'''
         if uri.startswith('./') or uri.startswith('../'):
-            return os.path.abspath(uri) 
+            return os.path.abspath(uri)
         return uri
 
     @staticmethod
-    def _unquote(foo):
-        return urllib.unquote(foo).replace(':', '/')
+    def _unquote(uri):
+        '''replace : with / in a WMS uri'''
+        return urllib.unquote(uri).replace(':', '/')
 
     def initialize_controller(self, uri, branch=None):
+        '''
+        Figure out from the uri string what type of controller
+        to use for fetching plans
+            - WMS
+            - GIT
+            - HG    -- Not Implemented
+            - LOCAL -- Not Implemented
+
+        @param uri: uri to control repo
+        @type uri: string
+        '''
         ctrltype = 'GIT'
         uri = self.normalize_path(uri)
         paths = [ x for x in uri.split('/') ]
@@ -90,12 +133,13 @@ class Planer(object):
         rev = None
         if self.is_local(uri):
             ctrltype = 'LOCAL'
+            raise NotImplementedError
         if base == self.cfg.wmsBase:
             path = self._unquote(path.replace('api/repos/', ''))
             ctrltype = 'WMS'
             # If we find a tips or revision.txt we use that version 
             # Else we use the tip from rest api
-            tip = self.rf.revs.get(path)
+            tip = self.revision_file.revs.get(path)
             if tip:
                 rev = tip.get('id')
         # Silly but if we do not specify branch at command line 
@@ -113,27 +157,33 @@ class Planer(object):
                                             rev,
                                             )
 
-
-    def _score(self, path):
+    @staticmethod
+    def _score(path):
+        '''replace . or - with underscores'''
         return path.replace('.', '_').replace('-','_')
 
-    def _dash(self, path):
+    @staticmethod
+    def _dash(path):
+        '''replace . with -'''
         return path.replace('.', '-')
 
     def _writePlan(self, filename, blob):
+        '''write plan text (blob) to filename''' 
         path = os.path.join(self.path, filename)
         dirs = os.path.dirname(path)
         if dirs and not os.path.exists(dirs):
             os.makedirs(dirs)
-        with open(path, 'a') as _f:
-            _f.write(blob)
+        with open(path, 'a') as fobj:
+            fobj.write(blob)
 
     def _makeDirs(self, path):
+        '''make dir path'''
         path = os.path.join(self.path, path)
         if not os.path.exists(path):
             os.makedirs(path)
 
     def _create(self):
+        '''Create plans'''
         logger.info('Creating plans for %s in %s' %
                                 (self.uri, self.path))
 
@@ -155,14 +205,14 @@ class Planer(object):
             #pathq = '/'.join(data.get('pathq').split(':')[:-1])
             pathq = data.get('path')
             filename = os.path.join(self.cfg.projectsDir, pkg + '.bob')
-            template = BOBPLAN.format(pkgname=pkg,srctree=name,pathq=pathq)   
+            template = BOBPLAN.format(pkgname=pkg, srctree=name, pathq=pathq)   
             self._writePlan(filename, template)
 
 
 
     def create(self):
         '''
-        create plans from revision.txt
+        Create plans from revision.txt
         '''
         if not self.fetched:
             # TODO Add code to controller type 
@@ -187,10 +237,13 @@ scm {srctree} wms {pathq} %(branch)s
 
 targetLabel %(ci_label)s
 
+target []
+
 target {pkgname}
 
 [target:{pkgname}]
 version %(version)s.%(scm)s
+scm {srctree}
 sourceTree {srctree} recipes/{pkgname}
 flavor_set x86_64
 '''
@@ -284,6 +337,5 @@ defaultBuildReqs []
 
 if __name__ == '__main__':
     import sys
-    from conary.lib import util
-    sys.excepthook = util.genExcepthook()
+    sys.excepthook = conary_util.genExcepthook()
 

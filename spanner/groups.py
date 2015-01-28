@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+'''
+Actions for committing and cooking conary groups from template
+'''
 
 from . import factory
 from conary import changelog
@@ -26,6 +29,11 @@ logger = logging.getLogger(__name__)
 
 
 class GroupBuilder(object):
+    '''
+    B{GroupBuilder}
+    Build a conary group from a template object
+    @param template: a Template object
+    '''
 
     def __init__(self, template):
         self.name = template.name
@@ -33,66 +41,52 @@ class GroupBuilder(object):
         self.label = template.label
         self.recipe = template.getRecipe()
         self.spec = template.getTroveTuple()
-        self._cclient = None
-        self._cfg = None
 
-    conaryClientFactory = factory.ConaryClientFactory
-
-    def _getClient(self, force=False):
-        if self._cclient is None or force:
-            self._cclient = self.conaryClientFactory().getClient(
-                model=False)
-        return self._cclient
-
-    conaryClient = property(_getClient)
-
-    def _getCfg(self, force=False):
-        if self._cfg is None or force:
-            self._cfg = self.conaryClientFactory().getCfg()
-        return self._cfg
-
-    conaryCfg = property(_getCfg)
-
-        
-    def groupSource(self, recipe=None, label=None):
-        cc = self.conaryClient
-        troveName = str(self.name)
-        version = str(self.version)
-        if not label:
-            label = self.label
-        groupRecipeContents = recipe
-        if not groupRecipeContents:
-            groupRecipeContents = self.createRecipe()
-        logger.info("Creating %s:source=%s", troveName, str(label))
+    @classmethod       
+    def commitGroupSource(cls, recipe=None, name=None, 
+                                    version=None, label=None):
+        '''
+        B{groupSource}
+        Commit group recipe to conary label
+        @keyword recipe: String of a conary recipe
+        @keyword label: conary label object
+        ''' 
+        cc = factory.ConaryClientFactory().getClient()
+        logger.info("Creating %s:source=%s", name, str(label))
         message = "Automatic checkin for %s" % version
         message = message.rstrip() + "\n"
         cLog = changelog.ChangeLog(name = cc.cfg.name,
                 contact = cc.cfg.contact, message = message)
         pathDict = {
-                "%s.recipe" % troveName :
-                    filetypes.RegularFile(contents=groupRecipeContents, config=True),
+                "%s.recipe" % name :
+                    filetypes.RegularFile(contents=recipe, config=True),
                 }
-        cs = cc.createSourceTrove(troveName + ':source', str(label),
+        cs = cc.createSourceTrove(name + ':source', str(label),
                 version, pathDict, cLog)
         cc.getRepos().commitChangeSet(cs)
 
-    def cookGroup(self, specs, macros={}):
+    @classmethod
+    def cookGroup(cls, specs, buildlabel, macros=None):
         '''
-        @param specs list of trove specs
-        @type  specs list
-        @param macros dictionary of macros conary style
-        @type  macros dict
+        Cook group source on a conary label
+        @param specs: list of trove specs
+        @type  specs: list
+        @keyword macros: dictionary of macros conary style
+        @type macros: dict
         '''
+        # sanitize macros
+        macros = macros or {}
+
         # FIXME -- cfg might be trickier than this.
         # might need to build a cfg from bobplan
-        cfg = self.conaryCfg
-        cfg.buildLabel = self.label
+        cfg = factory.ConaryClientFactory().getCfg()
+        cfg.buildLabel = buildlabel
         cfg.initializeFlavors()
         # END
 
         # Over configured... not necessary
         allowFlavorChange = 'allow-flavor-change' # Not False
-        targetFile = 'to-file' # Not sure how to use this yet
+        #targetFile = 'to-file' # Not sure how to use this yet
         crossCompile = None # 'cross'
         unknownFlags = None # 'unknown-flags'
         profile = False
@@ -110,20 +104,23 @@ class GroupBuilder(object):
                                  shortenFlavors=cfg.shortenGroupFlavors) 
 
         try:
-            cook.cookCommand(cfg, specs, prep=prep, macros=macros, resume=resume,
-                         allowUnknownFlags=unknownFlags, ignoreDeps=ignoreDeps,
-                         showBuildReqs=showBuildReqs, profile=profile,
-                         crossCompile=crossCompile, downloadOnly=downloadOnly,
-                         groupOptions=groupOptions,
-                         )
+            cook.cookCommand(cfg, specs, prep=prep, macros=macros, 
+                        resume=resume, allowUnknownFlags=unknownFlags, 
+                        ignoreDeps=ignoreDeps, showBuildReqs=showBuildReqs, 
+                        profile=profile, crossCompile=crossCompile, 
+                        downloadOnly=downloadOnly, groupOptions=groupOptions,
+                        )
         except builderrors.GroupFlavorChangedError, err:
-            err.args = (err.args[0] +
-                        '\n(Add the --allow-flavor-change flag to override this error)\n',)
+            msg = ('\n(Add the --allow-flavor-change '
+                            'flag to override this error)\n')
+            err.args = (err.args[0] + msg)
             raise
 
 
 
     def fricassee(self):
-        self.groupSource(self.recipe, self.label)
-        self.cookGroup([self.spec])
+        '''Automatically commit and cook conary group'''
+        self.commitGroupSource(recipe=self.recipe, name=self.name, 
+                                version=self.version, label=self.label)
+        self.cookGroup(specs=[self.spec], buildlabel=self.label)
         return 

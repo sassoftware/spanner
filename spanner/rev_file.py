@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+''' 
+Revision File Object, includes actions for parsing revisions.txt or tip
+'''
+
 
 import os
 
@@ -27,6 +31,9 @@ class RevisionFile(object):
         self.parse()
 
     def parse(self):
+        '''
+        parse the revisions.txt or tip file
+        '''
         # Try to parse a tips file first
         try:
             for line in open('tips'):
@@ -69,6 +76,7 @@ class RevisionFile(object):
                     }
 
     def _gerrit_uri(self):
+        '''return a gerrit uri'''
         return '%s://%s:%s/%s' % (
                 os.environ['GERRIT_SCHEME'],
                 os.environ['GERRIT_HOST'],
@@ -77,6 +85,7 @@ class RevisionFile(object):
                 )
 
     def _gerrit_path(self):
+        '''return a gerrit path'''
         # This assumes that the name that the jenkins plugin gave to the gerrit
         # matches the silo name in WMS. In the future perhaps WMS can do
         # reverse mapping given a real git URL to find the virtual name.

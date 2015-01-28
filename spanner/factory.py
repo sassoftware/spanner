@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # Copyright (c) SAS Institute Inc.
 #
@@ -14,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+'''
+Conary Client Factory creator
+'''
 
 from conary.cmds import updatecmd
 from conary import conarycfg
@@ -29,7 +30,18 @@ logger = logging.getLogger(__name__)
 
 
 class ConaryClientFactory(object):
+    '''
+    B{ConaryClientFactory}
+    Functions for returning conary clients or cfgs
+    '''
+
     def getClient(self, modelFile=None, model=False):
+        '''
+        B{getClient}
+        Return a conary client
+        @keyword modelFile: conary system model file
+        @keyword model: Boolean to toggle using modelFile
+        '''
         ccfg = self.getCfg()
         if model:
             if not modelFile:
@@ -42,7 +54,14 @@ class ConaryClientFactory(object):
         cclient.setUpdateCallback(callback)
         return cclient
 
-    def getCfg(self, readconfig=True, initflv=True):
+    @classmethod
+    def getCfg(cls, readconfig=True, initflv=True):
+        '''
+        B{getCfg}
+        Return a conary cfg object
+        @keyword readconfig: Boolean toggles read local conaryrc
+        @keyword initflv: Boolean toggles initializeFlavors()
+        '''
         ccfg = conarycfg.ConaryConfiguration(readConfigFiles=readconfig)
         if initflv:
             ccfg.initializeFlavors()

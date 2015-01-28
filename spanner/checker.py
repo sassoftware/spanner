@@ -1,3 +1,23 @@
+#
+# Copyright (c) SAS Institute Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+'''
+Actions to read plans, create package objects, set flags for changes 
+between conary version and SCM repository
+'''
+
 import logging
 import os
 
@@ -11,13 +31,21 @@ from rev_file import RevisionFile
 logger = logging.getLogger(__name__)
 
 class PlanUtils(object):
+    '''
+    B{PlanUtils}
+    tools for reading and processing plans
+    '''
 
-    def _read_plan(self, path):
+    def __init__(self):
+        self.revision_file = RevisionFile()
+
+    @classmethod
+    def read_plan(cls, path):
         '''
         read individual plan
         @param path: path to plan
-        @type path: string
-        @return cfg object
+        @type path: C{string}
+        @return: cfg object
         '''
         logger.debug('Reading...')
         plan = config.BobConfig()
@@ -25,21 +53,34 @@ class PlanUtils(object):
         logger.info('Reading plan from %s' % path)
         return plan
 
-    def _get_repositories(self, plan, branch=None):
+    @classmethod
+    def get_repositories(cls, plan, branch=None):
+        '''read repositories from bob-plans'''
         repositories = {}
         macros = plan.getMacros()
         try:
             repositories = plan.getRepositories()
-        except:
-            logger.warn('Unable to read repositories from bob plan')
+        except Exception, err:
+            logger.warn('Unable to read repositories from bob plan : %s' % err)
             macros.update({'branch': branch})
             repositories = plan.getRepositories(macros)
         return repositories
 
-    def _get_controllers(self, plan, branch=None):
+    def get_controllers(self, plan, branch=None):
+        '''
+        Figure out from the plan what type of controller
+        to use for fetching from repo
+            - WMS
+            - GIT
+            - HG    -- Not Implemented
+            - LOCAL -- Not Implemented
+
+        @param plan: uri to plan
+        @type uri: C{string}
+        '''
         controllers = {}
         base = None
-        repositories = self._get_repositories(plan, branch)
+        repositories = self.get_repositories(plan, branch)
         for name, values in repositories.iteritems():
             ctrltype = values[0].upper()
             paths = [ x for x in values[1].split('/') if x ]
@@ -49,7 +90,7 @@ class PlanUtils(object):
             if ctrltype == 'WMS':
                 base = plan.wmsBase
                 path = '/'.join(paths)
-                tip = self.rf.revs.get(path)
+                tip = self.revision_file.revs.get(path)
                 if tip:
                     rev = tip.get('id')
             if ctrltype in [ 'GIT', 'HG' ]:
@@ -72,14 +113,23 @@ class PlanUtils(object):
 
 
 class Checker(PlanUtils):
+    '''
+    B{Checker}
+    Check plans and create package objects
+    @param plans: set of plan objects
+    @param cfg: cfg object
+    @keyword force: list of targets to build regardless of change state
+    @keyword branch: branch of repo to work on
+    @keyword test: Boolean to trigger a dry run 
+    '''
 
-    def __init__(self, plans, cfg, force=[], branch=None, test=False):
+    def __init__(self, plans, cfg, force=None, branch=None, test=False):
+        super(Checker, self).__init__()
         self.plans = plans
-        self.test = test
         self.cfg = cfg
-        self.force_build = force
+        self.force_build = force or []
         self.branch = branch
-        self.rf = RevisionFile()
+        self.test = test
 
     def setForceBuild(self, targets):
         '''
@@ -94,12 +144,12 @@ class Checker(PlanUtils):
         plans can contain more than one target
         targets are translated into pkgs.
         @param path: path to plan
-        @type path: String
+        @type path: C{string}
         @return pkgs: a set of pkg objects
         '''
         pkgs = set()
         assert os.path.exists(path)
-        plan = self._read_plan(path)
+        plan = self.read_plan(path)
         macros = plan.getMacros()
 
         # Check plans for branch in plan
@@ -124,8 +174,8 @@ class Checker(PlanUtils):
 
             label = plan.getTargetLabel()
             logger.debug('Target Label : %s' % label.asString())
-            repositories = self._get_repositories(plan, branch)
-            controllers = self._get_controllers(plan, branch)   
+            repositories = self.get_repositories(plan, branch)
+            controllers = self.get_controllers(plan, branch)   
             # Create initial package
             bobsect = plan.getSection('target:%s'%target)
             scm = bobsect.scm or bobsect.sourceTree.split()[0]
@@ -142,11 +192,12 @@ class Checker(PlanUtils):
             pkgs.add(pkg)
         return pkgs
 
-    def _get_commit_hash(self, pkg):
+    @classmethod
+    def _get_commit_hash(cls, pkg):
         ''' 
-            pkg = pkg object with ctrlrs
-            The commit hash we want to build 
-            needs to be from the revisions.txt if supplied
+        The commit hash we want to build 
+        needs to be from the revisions.txt if supplied
+        @param pkg: pkg object with ctrlrs
         '''
         commit = None
         ctrlr = pkg.controllers.get(pkg.scm)
@@ -165,14 +216,16 @@ class Checker(PlanUtils):
         return { 'commit' : commit }
 
     def _get_commit_hashes(self, packages):
-        for _n, pkg in packages.items():
-            for _p in pkg:
-                _p.update(self._get_commit_hash(_p))
-                packages.setdefault(_n, set()).add(_p)
+        '''iter over packages and set  commit hash values'''
+        for name, pkgs in packages.items():
+            for pkg in pkgs:
+                pkg.update(self._get_commit_hash(pkg))
+                packages.setdefault(name, set()).add(pkg)
         return packages
 
-    def _get_conary_version(self, pkg):
-        # Try and find conary versions 
+    @classmethod
+    def _get_conary_version(cls, pkg):
+        '''Tries to find conary version of a package'''
         cc = factory.ConaryClientFactory().getClient()
         revision = None
         version = None
@@ -184,38 +237,49 @@ class Checker(PlanUtils):
             versions = latest[pkg.target]
             version = max(versions)
             revision = version.trailingRevision().version  
-            logger.debug('Found revision %s of %s' % (str(revision),pkg.target))
+            logger.debug('Found revision %s of %s' % (str(revision), 
+                                                            pkg.target))
             
         return {'revision': revision, 'version': version, 'latest': latest}
 
-    def _get_conary_versions(self, packages):
-        # Try and find conary versions 
+    @classmethod 
+    def _get_conary_versions(cls, packages):
+        '''
+        iter through a set of packages and find conary version of ea.
+        @return: updated package set
+        '''
         cc = factory.ConaryClientFactory().getClient()
         query = {}
- 
-        for _n, pkg in packages.items():
-            for _p in pkg:
-                query.update({ _p.target: { _p.label: None, },})
+
+        # Only make one query to the repo
+        for _, pkgs in packages.items():
+            for pkg in pkgs:
+                query.update({ pkg.target: { pkg.label: None, },})
         
         latestTroves = cc.repos.getTroveLeavesByLabel(query)
         
-        for _n, pkg in packages.items():
-            for _p in pkg:
-                latest = latestTroves.get(_p.target)
+        for name, pkgs in packages.items():
+            for pkg in pkgs:
+                latest = latestTroves.get(pkg.target)
                 if latest:
-                    logger.debug('%s found on %s' % (_p.target, _p.label))
+                    logger.debug('%s found on %s' % (pkg.target, pkg.label))
                     version = max(latest)
                     logger.debug('Latest Version : %s' % version.asString())
                     revision = version.trailingRevision().version  
-                    logger.debug('Found revision %s of %s' % (str(revision),_p.target))
+                    logger.debug('Found revision %s of %s' % (str(revision),
+                                                    pkg.target))
             
-                    _p.update({'revision': revision, 
+                    pkg.update({'revision': revision, 
                             'version': version, 
                             'latest': latest})
-                packages.setdefault(_n, set()).add(_p)
+                packages.setdefault(name, set()).add(pkg)
         return packages
 
     def _detect_change(self, pkg):
+        '''
+        detect if a package has changed
+        @return: dict { 'change' : Boolean }
+        '''
         # Start by assuming package did not change
         change = False
         if pkg.commit:
@@ -226,7 +290,7 @@ class Checker(PlanUtils):
             if pkg.revision and not pkg.commit.startswith(
                     pkg.revision.split('.')[-1]):
                 logger.debug('Git Commit %s does not start '
-                            'with Package revision %s' % (pkg.commit, pkg.revision))
+                        'with Package revision %s' % (pkg.commit, pkg.revision))
                 logger.debug('Package %s marked changed' % pkg.target)
                 change = True
 
@@ -249,13 +313,15 @@ class Checker(PlanUtils):
         return {'change': change}
 
     def _detect_changes(self, packages):
-        for _n, pkg in packages.items():
-            for _p in pkg:
-                _p.update(self._detect_change(_p))
-                packages.setdefault(_n, set()).add(_p)
+        '''loop through packages looking for changes'''
+        for name, pkgs in packages.items():
+            for pkg in pkgs:
+                pkg.update(self._detect_change(pkg))
+                packages.setdefault(name, set()).add(pkg)
         return packages
         
     def _check_plans_in_dir(self, path):
+        '''create initial plan package object for each plan in a directory'''
         packages = {}
         for pkg in self._initial_packages(path):
             if pkg.target and pkg.repositories:
@@ -265,6 +331,7 @@ class Checker(PlanUtils):
 
 
     def _get_packages(self, plans):
+        '''create a dict of all the sections and plans'''
         data = {}
         for section, paths in plans.iteritems():
             if section in [ self.cfg.projectsDir, 
@@ -291,9 +358,14 @@ class Checker(PlanUtils):
         return data   
 
     def check(self):
+        '''
+        Check all sections for plans and 
+        @return: C{dict} of { section : packages }
+        '''
         return self._get_packages(self.plans)
 
     def main(self):
+        '''Main call for Checker'''
         return self.check()
 
 

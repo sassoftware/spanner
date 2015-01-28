@@ -1,33 +1,40 @@
-Spanner is a python program that leverages wms and git to enable conti-
+# README : Spanner
+
+* **Spanner**
+
+**Spanner** is a python program that leverages wms and git to enable conti-
 nous integration builds. Spanner automates building packages from  mul-
-tiple  git repos into conary packages as well as building conary groups
+tiple git repos into conary packages as well as building conary groups
 after build runs.
 
-Spanner requires a WMS control repo with a directory of bob-plans.  The
-bob-plans directory must contain specific directories.
+* **Overview**
 
-Project/
-   ├ ─ ─ control.yaml # Contains a list of git repos to add to your
-forest
-   ├── bob-plans
-      ├── config # Config files for bob.
-      ├── external # Packages built outside spanner on conary label
-      ├── products # Conary Groups
-      └── projects # Conary Pkgs built by spanner
+    **Spanner** requires a **WMS** control repo with a directory of bob-plans.  The
+    bob-plans directory must contain specific directories.
 
-spanner also requires a wms url.
+    Project/
+        ├ ─ ─ control.yaml # Contains a list of git repos to add to your forest
+        ├── bob-plans
+            ├── config # Config files for bob.
+            ├── external # Packages built outside spanner on conary label
+            ├── products # Conary Groups
+            └── projects # Conary Pkgs built by spanner
 
-   ie:   http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools
+    spanner also requires a wms url.
 
-Common Commands
+    ie:   http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools
 
-       build  Build all packages that have changed in the git forest.
 
-       plan   Make a set of bob plan templates for a git forest.
 
-       config Show spanner config
+* **Common Commands**
 
-OPTIONS
+    -   build  Build all packages that have changed in the git forest.
+
+    -   plan   Make a set of bob plan templates for a git forest.
+
+    -   config Show spanner config
+
+    -   OPTIONS
        --branch=BRANCH
               Specifies the branch to build. Defaults to master  if  not  sup-
               plied ie: --branch master
@@ -62,4 +69,9 @@ OPTIONS
               Toggles silent mode. Defaults to off. Deprecated.
 
 
+* **Credits**
+
+    - Credits -- Brett Smith <bc.smith@sas.com> 
+    - Copyright -- (c) SAS Institute Inc.
+    - License -- SEE LICENSE
 

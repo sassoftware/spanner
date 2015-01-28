@@ -26,7 +26,6 @@ from conary.lib.cfgtypes import CfgString
 from conary.lib.cfgtypes import CfgDict
 from conary.lib.cfgtypes import  CfgBool
 from conary.lib.cfgtypes import ParseError
-#from conary.lib.cfgtypes import CfgInt, CfgPathList, CfgQuotedLineList
 from conary.lib.cfgtypes import CfgType
 from conary.deps import deps
 from bob import config as bobconfig
