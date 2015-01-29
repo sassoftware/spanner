@@ -4,6 +4,9 @@
 #
 # All rights reserved.
 #
+'''
+Actions for interacting with SCM repos
+'''
 
 import logging
 import os 
@@ -48,6 +51,7 @@ class Controller(object):
         return cls._registry.get(controltype)(*args, **kwargs)
 
 class BaseController(object):
+    '''Abstract for Controller'''
 
     CONTROLLERS = ('WMS', 'GIT', 'HG', 'LOCAL')
 
@@ -128,6 +132,8 @@ class BaseController(object):
 
 
 class WmsController(BaseController):
+    '''WMS Controller'''
+
     ControllerType = 'WMS'
 
     def __init__(self, base, path, branch=None, rev=None):
@@ -179,6 +185,7 @@ class WmsController(BaseController):
 Controller.register(WmsController)
 
 class GitController(BaseController):
+    '''GIT Controller'''
 
     ControllerType = 'GIT'
 
@@ -224,6 +231,8 @@ class GitController(BaseController):
 Controller.register(GitController)
 
 class HgController(BaseController):
+    '''HG Controller'''
+    #FIXME Not Implemented     
 
     ControllerType = 'HG'
 
@@ -247,6 +256,8 @@ class HgController(BaseController):
 Controller.register(HgController)
 
 class LocalController(BaseController):
+    '''LOCAL Controller'''
+    #FIXME Not Implemented     
 
     ControllerType = 'LOCAL'
 
