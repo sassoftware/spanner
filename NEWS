@@ -1,3 +1,16 @@
 NEWS
 
-* Added switches for group and products
+* Changes for spanner 2.4
+
+** Clean up of code with pylint
+
+** Added a pylintrc
+
+** Updated Documentation
+
+*** Add wiki txt
+
+* Changes for spanner 2.3
+
+** Added switches for group and products
+
