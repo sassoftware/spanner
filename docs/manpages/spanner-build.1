@@ -13,7 +13,7 @@ spanner build [uri] [plans]... <option>
 
 Spanner build command builds git repos into conary packages from bob plans using a wms control site. Spanner uses a config directory (projects) populated with build plans for all the packages it intends to build. This directory is located in a git repo for version control and branching. 
 
-Git information is located using WMS. WMS keeps track of the important infromation from git repos in a rest interface. As well as creating a forest of git repos using a control.yaml file containing all pertaining repos in the control git repo.
+Git information is located using WMS. WMS keeps track of the important information from git repos in a rest interface. As well as creating a forest of git repos using a control.yaml file containing all pertaining repos in the control git repo.
 
 Spanner leverages the WMS REST interface to find all related git information. In build mode spanner reads WMS control file for revisions, checks out the plans from the control repo, reads the config files, and creates a list of packages to build. The tool then iterates through the list and checks the git commit version and compares it to the version of the package in the corresponding conary repo. If the commit and the version do not match spanner passes the package off to bob the builder to be built. 
 
@@ -34,7 +34,7 @@ Specifies a specific spannerrc. Defaults to none using internal hard coded confi
 ie: \-\-cfgfile ~/spannerrc
 .TP
 .B \-\-debug\-logging
-Toggles debug log level on. Defaults to off (quiet) if not supplied. Provides usefull output when run in jenkins.
+Toggles debug log level on. Defaults to off (quiet) if not supplied. Provides useful output when run in jenkins.
 
 .TP
 .B \-\-dry\-run

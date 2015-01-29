@@ -8,7 +8,7 @@ spanner \- loop for bob
 .SH DESCRIPTION
 .PP
 .B spanner 
-is a python program that leverages wms and git to enable continous integration builds. Spanner automates building packages from multiple git repos into conary packages as well as building conary groups after build runs.
+is a python program that leverages wms and git to enable continuous integration builds. Spanner automates building packages from multiple git repos into conary packages as well as building conary groups after build runs.
 
 Spanner requires a WMS control repo with a directory of bob-plans. The bob-plans directory must contain specific directories. 
 .PP
@@ -56,7 +56,7 @@ Specifies a specific spannerrc. Defaults to none using internal hard coded confi
 ie: \-\-cfgfile ~/spannerrc
 .TP
 .B \-\-debug\-logging
-Toggles debug log level on. Defaults to off (quiet) if not supplied. Provides usefull output when run in jenkins.
+Toggles debug log level on. Defaults to off (quiet) if not supplied. Provides useful output when run in jenkins.
 
 .TP
 .B \-\-dry\-run
@@ -64,7 +64,7 @@ Toggles test mode on. Defaults to off. Used on initial runs to test outputs. usu
 
 .TP
 .B \-\-group
-Toggles group build on. Defaults to off. When on spanner will create a group at the end of the build run. The contents of which include all packages in projects and oprionally the packages specified in external directories. Uses a special config file 
+Toggles group build on. Defaults to off. When on spanner will create a group at the end of the build run. The contents of which include all packages in projects and optionally the packages specified in external directories. Uses a special config file 
 .B group.conf
 in the config directory. 
 
