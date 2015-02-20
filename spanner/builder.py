@@ -181,7 +181,7 @@ class Builder(object):
         failed_packages = []
         seen_plans = []
         skipped = []
-        for name, pkgs in packages.iteritems():
+        for name, pkgs in packages.items():
             for pkg in pkgs:
                 if pkg in tobuild:
                     # lets not build pkgs more than once
