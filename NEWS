@@ -1,5 +1,7 @@
 NEWS
 
+* Added fix for race condition when building pkgs
+
 * Changes for spanner 2.4
 
 ** Clean up of code with pylint
