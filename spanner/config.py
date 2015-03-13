@@ -32,6 +32,7 @@ from bob import config as bobconfig
 
 
 DEFAULT_PATH = ['/etc/spannerrc', '~/.spannerrc']
+DEFAULT_WMS = 'http://wheresmystuff.unx.sas.com'
 
 
 class CfgDependency(CfgType):
@@ -135,7 +136,7 @@ class SpannerConfiguration(MainConfig):
     tmpDir                      = (cfg.CfgString, 'tmp')
     bobExec                     = (cfg.CfgString, '/usr/bin/bob-4.2')
     bobPlansUri                 = cfg.CfgString
-    wmsBase                     = (cfg.CfgString, 'http://wheresmystuff.unx.sas.com')
+    wmsBase                     = (cfg.CfgString, DEFAULT_WMS)
     
     plansSubDir                 = (cfg.CfgString, 'bob-plans')
     projectsDir                 = (cfg.CfgString, 'projects')
@@ -176,11 +177,4 @@ class BobConfig(bobconfig.BobConfig):
 
 
 def openPlan(path, preload=DEFAULT_PATH):
-    plan = BobConfig()
-    for item in preload:
-        if item.startswith('~/') and 'HOME' in os.environ:
-            item = os.path.join(os.environ['HOME'], item[2:])
-        if os.path.isfile(item):
-            plan.read(item)
-    plan.read(path)
-    return plan
+    return bobconfig.openPlan(path, preload=preload, cls=BobConfig)

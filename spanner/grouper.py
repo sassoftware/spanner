@@ -64,7 +64,7 @@ class Grouper(object):
     def getDefaultConfig(self):
         '''get default cfg object for grouper'''
         logger.info('Loading default cfg')
-        self._cfg = config.SpannerConfiguration()
+        self._cfg = config.SpannerConfiguration(readConfigFiles=True)
         self._cfg.read()
 
     def getGrpConfig(self, plans):
@@ -91,6 +91,7 @@ class Grouper(object):
                         }
                 #macros.update(self._cfg.macros)
                 plan._macros = Macros(macros)
+        plan.wmsBase = self.cfg.wmsBase
         return plan
 
     @classmethod

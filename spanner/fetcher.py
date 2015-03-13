@@ -23,6 +23,7 @@ import tempfile
 from conary.lib import util as conary_util
 
 import urllib
+from . import config
 from . import controller
 from rev_file import RevisionFile
 
@@ -95,7 +96,8 @@ class Fetcher(object):
         if self.is_local(uri):
             ctrltype = 'LOCAL'
             raise NotImplementedError
-        if base == self.cfg.wmsBase:
+        if base in (self.cfg.wmsBase, config.DEFAULT_WMS):
+            base = self.cfg.wmsBase
             path = self._unquote(path.replace('api/repos/', ''))
             ctrltype = 'WMS'
             # If we find a tips or revision.txt we use that version 
