@@ -91,7 +91,7 @@ class Grouper(object):
                         }
                 #macros.update(self._cfg.macros)
                 plan._macros = Macros(macros)
-        plan.wmsBase = self.cfg.wmsBase
+        plan.wmsBase = self._cfg.wmsBase
         return plan
 
     @classmethod
