@@ -68,7 +68,6 @@ archive:
 tag:
 	git tag spanner-$(VERSION)
 
-clean: clean-subdirs default-clean 
 
 include Make.rules
 include Make.defs
