@@ -46,12 +46,14 @@ class Worker(object):
     '''
 
     def __init__(self, uri, force=None, branch=None, cfgfile=None, 
-                    group=False, products=False, test=False):
+                    group=False, products=False, test=False, cfg=None):
 
         self.uri = uri
         self.force = force or []
         self.cfgfile = cfgfile
-        self.cfg = self.getDefaultConfig()
+        if cfgfile or not cfg:
+            cfg = self.getDefaultConfig()
+        self.cfg = cfg
         self.group_build = group
         self.products_build = products
         self.test = test
@@ -71,7 +73,7 @@ class Worker(object):
         logger.info('Loading default cfg')
         if not cfgFile:
             cfgFile = self.cfgfile
-        return config.SpannerConfiguration(config=cfgFile)
+        return config.SpannerConfiguration(config=cfgFile, readConfigFiles=True)
 
     def fetch(self):
         '''

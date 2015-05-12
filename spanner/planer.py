@@ -64,7 +64,7 @@ class Worker(object):
         logger.info('Loading default cfg')
         if not cfgFile:
             cfgFile = self.cfgfile
-        return config.SpannerConfiguration(config=cfgFile)
+        return config.SpannerConfiguration(config=cfgFile, readConfigFiles=True)
 
     def plan(self):
         '''Main call to create plans from repo'''
@@ -134,7 +134,8 @@ class Planer(object):
         if self.is_local(uri):
             ctrltype = 'LOCAL'
             raise NotImplementedError
-        if base == self.cfg.wmsBase:
+        if base in (self.cfg.wmsBase, config.DEFAULT_WMS):
+            base = self.cfg.wmsBase
             path = self._unquote(path.replace('api/repos/', ''))
             ctrltype = 'WMS'
             # If we find a tips or revision.txt we use that version 

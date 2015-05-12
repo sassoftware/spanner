@@ -48,8 +48,7 @@ class PlanUtils(object):
         @return: cfg object
         '''
         logger.debug('Reading...')
-        plan = config.BobConfig()
-        plan.read(path)
+        plan = config.openPlan(path)
         logger.info('Reading plan from %s' % path)
         return plan
 

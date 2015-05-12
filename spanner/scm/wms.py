@@ -1,9 +1,9 @@
 import urllib
-import urllib2
-import requests
 import subprocess
 import os
 
+from conary.lib.http.http_error import ResponseError
+from conary.lib.http.opener import URLOpener
 from conary.lib.util import copyfileobj
 
 from spanner import scm
@@ -37,6 +37,7 @@ class WmsRepository(scm.ScmRepository):
         #self.repos = self.base + '/api/repos/' + self.pathq
         self.locator = self.repos + '/' + 'show_url'
         self.archive = self.repos + '/archive'
+        self.opener = URLOpener(followRedirects=True)
         if self.branch:
             self.poll = self.repos + '/poll/' + self._quote(self.branch)
         if not self.revision:
@@ -60,16 +61,11 @@ class WmsRepository(scm.ScmRepository):
         return urllib.unquote(foo).replace(':', '/')
 
     def fetchlines(self, uri):
-        req = requests.get(uri)
-        if req.ok:
-            return [ x for x in req.text.split('\n') if x ]
-        return [ 'ERROR', req.status_code ]
+        data = self.opener.open(uri).read()
+        return [ x for x in data.decode('utf8').split('\n') if x ]
 
     def fetch(self, uri):
-        req = requests.get(uri)
-        if req.ok:
-            return req.text
-        return req.status_code
+        return self.opener.open(uri).read()
 
     def _findTip(self, revisions):
         for result in revisions:
@@ -172,7 +168,7 @@ class WmsRepository(scm.ScmRepository):
         '''
         archive = self._archive()
         data = urllib.urlencode([('subtree', subtree)]) if subtree else None
-        f = urllib2.urlopen(self.repos + '/archive/'
+        f = self.opener.open(self.repos + '/archive/'
                     + urllib.quote(self.revision) + '/' + archive, data=data)
         tar = subprocess.Popen(['tar', '-x'], stdin=subprocess.PIPE,
                 cwd=workDir)
@@ -189,7 +185,7 @@ class WmsRepository(scm.ScmRepository):
         return prefix
 
     def getAction(self, extra=''):
-        f = urllib2.urlopen(self.repos + '/show_url')
+        f = self.opener.open(self.repos + '/show_url')
         url = f.readline().strip()
         f.close()
         return 'addGitSnapshot(%r, branch=%r, tag=%r%s)' % (
@@ -201,7 +197,7 @@ class WmsRepository(scm.ScmRepository):
         archive = urllib.quote(os.path.basename(snapPath))
         url = (self.repos + '/archive/'
                 + urllib.quote(self.revision) + '/' + archive)
-        f_in = urllib2.urlopen(url)
+        f_in = self.opener.open(url)
         with open(snapPath, 'w') as f_out:
             copyfileobj(f_in, f_out)
         f_in.close()

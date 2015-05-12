@@ -64,7 +64,7 @@ class Builder(object):
     def getDefaultConfig(self):
         '''get default cfg object for builder'''
         logger.info('Loading default cfg')
-        self._cfg = config.SpannerConfiguration()
+        self._cfg = config.SpannerConfiguration(readConfigFiles=True)
         self._cfg.read()
 
 
