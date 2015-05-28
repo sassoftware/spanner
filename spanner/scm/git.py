@@ -215,7 +215,7 @@ class GitRepository(scm.ScmRepository):
         p1 = subprocess.Popen(
             ['git', 'archive', '--format=tar', self.revision, subtree], 
             stdout=subprocess.PIPE, 
-            cwd=self.repoDir
+            cwd=self.repo_dir
             )
 
         p2 = subprocess.Popen(['tar', '-x'], stdin=p1.stdout, cwd=workDir)
