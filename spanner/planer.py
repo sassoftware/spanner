@@ -299,7 +299,7 @@ includeConfigFile branch.conf
 # CentOS 6n - Encapsulated with native Python
 
 macros testbits_label   testbits.rb.rpath.com@rpath:centos-6n
-macros testutils_label  newton.eng.rpath.com@rpath:centos-6n-testutils
+macros testutils_label  faraday.cny.sas.com@sas:rba-master
 macros distro_label     centos6.rpath.com@rpath:centos-6e
 macros common_label     centos6.rpath.com@rpath:centos-6-common
 macros contrib_label    contrib.rpath.org@rpath:centos-6e

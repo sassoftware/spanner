@@ -24,12 +24,12 @@ def create(uri, force=[], branch=None, cfgfile=None, test=False):
 
 if __name__ == '__main__':
     sys.excepthook = util.genExcepthook()
-      
-    test0 = '/home/bsmith/git/scc/build-tools/build-tools/bob-plans' 
-    test1 = 'file:///home/bsmith/git/scc/build-tools/build-tools/bob-plans'        
-    test2 = 'ssh://git@scc.unx.sas.com/scc/build-tools?master'
-    test3 = 'http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools'
-    test4 = '../../../build-tools/bob-plans?4' 
+
+    test0 = '/home/bsmith/git/gerrit-pdt/tools/build-tools/build-tools/bob-plans'
+    test1 = 'file:///home/bsmith/git/gerrit-pdt/tools/build-tools/build-tools/bob-plans'
+    test2 = 'ssh://gerrit-pdt.unx.sas.com/gerrit-pdt/tools/build-tools?master'
+    test3 = 'http://wheresmystuff.unx.sas.com/api/repos/gerrit-pdt/tools:build-tools'
+    test4 = '../../../build-tools/bob-plans?4'
     test5 = 'http://wheresmystuff.unx.sas.com/api/repos/gitgrid/VirtualApplications:Content:ams-vapp'
 
     force  = []

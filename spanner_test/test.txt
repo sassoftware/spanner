@@ -1,1 +1,1 @@
-PYTHONPATH=../. python spanner build http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools --debug-all --debug-logging
+PYTHONPATH=../. python spanner build http://wheresmystuff.unx.sas.com/api/repos/gerrit-pdt/tools:build-tools --debug-all --debug-logging

@@ -162,7 +162,7 @@ class WmsRepository(scm.ScmRepository):
 
     def snapshot(self, workDir, subtree=None):
         '''
-        http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools/archive/78eed1cae30790e65ee599b04f93f23e93b84641/build-tools.tar
+        http://wheresmystuff.unx.sas.com/api/repos/gerrit-pdt/tools:build-tools/archive/78eed1cae30790e65ee599b04f93f23e93b84641/build-tools.tar
         Need to parseRevisionLine and extract the head
         then download the head and explode it into the workDir
         '''

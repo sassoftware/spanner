@@ -33,7 +33,7 @@ Project/
 
 spanner also requires a wms url.
 
-ie:   http://wheresmystuff.unx.sas.com/api/repos/scc/build-tools
+ie:   http://wheresmystuff.unx.sas.com/api/repos/gerrit-pdt/tools:build-tools
 
 How it works
 -------------

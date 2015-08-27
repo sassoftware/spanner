@@ -11,7 +11,7 @@ targetLabel foo.bar@foo:foo-bar-1
 
 wmsBase 'http://wheresmystuff.unx.sas.com'
 
-macros target_host newton.eng.rpath.com
+macros target_host faraday.cny.sas.com
 
 [plans:bobplans]
 scm %(scmPlans)s
